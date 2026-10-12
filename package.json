@@ -1,0 +1,14 @@
+{
+  "name": "majaochfabian",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "python3 tools/build_site.py",
+    "dev": "npm run build && wrangler d1 migrations apply majaochfabian-osa --local && wrangler dev",
+    "test": "node --test --no-warnings=ExperimentalWarning test/*.test.js",
+    "deploy": "npm run build && wrangler d1 migrations apply majaochfabian-osa --remote && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.144.0"
+  }
+}

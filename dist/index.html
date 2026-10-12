@@ -130,6 +130,8 @@ a { color: inherit; }
 .step-out .line { margin: 0; font-family: var(--font-display); font-style: italic; font-weight: 300; font-size: clamp(44px, 7vw, 104px); line-height: 1; padding: 6px 20px; background: rgb(var(--paper-rgb) / 0.8); }
 .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 34px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); text-decoration: none; cursor: pointer; font: inherit; transition: background .2s, color .2s; }
 .btn:hover { background: var(--ink); color: var(--on-ink); }
+.btn:disabled { opacity: .6; cursor: progress; }
+.btn:disabled:hover { background: var(--paper); color: var(--ink); }
 
 /* progress rail */
 .rail { position: fixed; z-index: 15; right: 26px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 0; opacity: 0; pointer-events: none; transition: opacity .4s; }
@@ -182,6 +184,7 @@ form { display: flex; flex-direction: column; gap: 30px; }
 .thanks { display: flex; flex-direction: column; gap: 18px; padding: 40px; border: 1px solid var(--ink); }
 .thanks h3 { margin: 0; font-family: var(--font-display); font-weight: 300; font-size: 44px; line-height: 1.05; }
 .thanks p { margin: 0; }
+.trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .linkbtn { align-self: flex-start; background: none; border: 0; border-bottom: 1px solid currentColor; padding: 0 0 4px; color: inherit; font: inherit; cursor: pointer; }
 
 /* contact */
@@ -297,7 +300,7 @@ footer { position: relative; z-index: 2; background: var(--ink); color: var(--on
         <div class="item"><span class="caps">Barn</span><p class="big">Endast vuxna</p><p>Vi firar bröllopet utan barn och hoppas att ni passar på att njuta av en kväll ledigt.</p></div>
         <div class="item"><span class="caps">Gåvor</span><p>Det finaste ni kan ge oss är att ni kommer. Vill ni ändå ge något hjälper våra toastmasters Moa och Irma gärna till.</p></div>
         <div class="item"><span class="caps">Tal och spex</span><p>Anmäl till våra toastmasters Moa och Irma. Kontaktuppgifter hittar du längre ned.</p></div>
-        <div class="item"><span class="caps">Färjor efter festen</span><p>Skärgårdsfärjan går från Ångbåtsbryggan på Köpstadsö till Saltholmen. Sista avgångarna natten till söndag:</p><ul class="ferry"><li><span class="num">23.32</span><span>Saltholmen 23.41</span></li><li><span class="num">00.52</span><span>Saltholmen 01.01</span></li><li><span class="num">02.19</span><span>Saltholmen 02.28</span></li></ul><p class="note">Lördagstider enligt sommartidtabellen 2026. Tiderna för 2027 kan ändras, så dubbelkolla gärna i <a href="https://www.vasttrafik.se/" target="_blank" rel="noopener">Västtrafiks reseplanerare ↗</a> närmare dagen.</p></div>
+        <div class="item"><span class="caps">Färjor efter festen</span><p>Skärgårdsfärjan går från Ångbåtsbryggan på Köpstadsö till Saltholmen. Sista avgångarna natten till söndag:</p><ul class="ferry" id="ferry-list"><li><span class="num">23.32</span><span>Saltholmen 23.41</span></li><li><span class="num">00.52</span><span>Saltholmen 01.01</span></li><li><span class="num">02.19</span><span>Saltholmen 02.28</span></li></ul><p class="note"><span id="ferry-src">Lördagstider enligt sommartidtabellen 2026. Tiderna för 2027 kan ändras,</span> så dubbelkolla gärna i <a href="https://www.vasttrafik.se/" target="_blank" rel="noopener">Västtrafiks reseplanerare ↗</a> närmare dagen.</p></div>
       </div>
     </div>
   </section>
@@ -324,10 +327,10 @@ footer { position: relative; z-index: 2; background: var(--ink); color: var(--on
             <div class="field"><label class="caps" for="f-mat">Mat och allergier</label><input id="f-mat" name="mat" type="text" placeholder="Vegetariskt, allergier eller annat"></div>
           </div>
           <div class="field"><label class="caps" for="f-halsning">Hälsning</label><textarea id="f-halsning" name="halsning" placeholder="Något du vill säga till oss? Helt frivilligt."></textarea></div>
+          <div class="trap" aria-hidden="true"><label for="f-webbplats">Lämna tomt</label><input id="f-webbplats" name="webbplats" type="text" tabindex="-1" autocomplete="off"></div>
           <p class="err" id="osa-err" role="alert"></p>
           <div style="display:flex; flex-direction:column; gap:14px; align-items:flex-start">
-            <button class="btn caps" type="submit">Skicka svar</button>
-            <p class="note">Prototyp: svaren sparas inte någonstans än.</p>
+            <button class="btn caps" type="submit" id="osa-send">Skicka svar</button>
           </div>
         </form>
       </div>
@@ -713,20 +716,50 @@ footer { position: relative; z-index: 2; background: var(--ink); color: var(--on
   /* ---------- O.S.A. ---------- */
   var form = document.getElementById("osa-form"), box = document.getElementById("osa-box"), yes = document.getElementById("yes-fields"), err = document.getElementById("osa-err");
   form.addEventListener("change", function () { yes.style.display = form.kommer.value === "ja" ? "flex" : "none"; });
+  var send = document.getElementById("osa-send"), sending = false;
+  var OFFLINE = "Det gick inte att skicka svaret just nu. Försök igen om en stund, eller mejla oss på majaochfabian@gmail.com.";
   form.addEventListener("submit", function (e) {
     e.preventDefault();
+    if (sending) return;
     var namn = form.namn.value.trim(), epost = form.epost.value.trim();
     if (!namn) { err.textContent = "Skriv ditt namn, så vet vi vem som svarar."; form.namn.focus(); return; }
-    if (!/^\S+@\S+\.\S+$/.test(epost)) { err.textContent = "Skriv en e-postadress som vi kan skicka bekräftelsen till."; form.epost.focus(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) { err.textContent = "Skriv en e-postadress som vi kan skicka bekräftelsen till."; form.epost.focus(); return; }
     err.textContent = "";
     var kommer = form.kommer.value === "ja";
+    var data = { namn: namn, epost: epost, kommer: form.kommer.value, fler: form.fler.value, mat: form.mat.value, halsning: form.halsning.value, webbplats: form.webbplats.value };
+    sending = true; send.disabled = true; send.textContent = "Skickar …";
+    fetch("/api/osa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (b) { if (!r.ok || !b.ok) throw { fel: b.fel }; return b; });
+      })
+      .then(function (b) { thanks(namn, kommer, b.bekraftelse ? epost : ""); })
+      .catch(function (x) { err.textContent = (x && x.fel) || OFFLINE; })
+      .then(function () { sending = false; send.disabled = false; send.textContent = "Skicka svar"; });
+  });
+  function thanks(namn, kommer, epost) {
     var wrap = document.createElement("div"); wrap.className = "thanks"; wrap.setAttribute("tabindex", "-1");
     var h = document.createElement("h3"); h.textContent = kommer ? "Tack, " + namn.split(" ")[0] + "!" : "Tack för att du svarade";
     var p = document.createElement("p"); p.textContent = kommer ? "Vi ses i kapellet den 10 juli och åker ut till ön tillsammans." : "Vad synd att du inte kan komma. Vi kommer att sakna dig.";
+    wrap.append(h, p);
+    if (epost) { var c = document.createElement("p"); c.className = "note"; c.textContent = "En bekräftelse är på väg till " + epost + "."; wrap.append(c); }
     var again = document.createElement("button"); again.type = "button"; again.className = "linkbtn caps"; again.textContent = "Svara för någon annan";
     again.addEventListener("click", function () { form.reset(); yes.style.display = "flex"; box.replaceChildren(form); form.namn.focus(); });
-    wrap.append(h, p, again); box.replaceChildren(wrap); wrap.focus();
-  });
+    wrap.append(again); box.replaceChildren(wrap); wrap.focus();
+  }
+
+  /* ---------- färjetider: Västtrafiks tidtabell för natten efter festen ersätter de tryckta tiderna när den finns ---------- */
+  if (/^https?:$/.test(location.protocol)) {
+    fetch("/api/farjor").then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (!d || !d.avgangar || !d.avgangar.length) return;
+      var list = document.getElementById("ferry-list");
+      list.replaceChildren.apply(list, d.avgangar.map(function (a) {
+        var li = document.createElement("li"), t = document.createElement("span"), to = document.createElement("span");
+        t.className = "num"; t.textContent = a.avgar; to.textContent = "Saltholmen " + a.framme;
+        li.append(t, to); return li;
+      }));
+      document.getElementById("ferry-src").textContent = "Enligt Västtrafiks tidtabell för natten till söndag 11 juli 2027. Det kan bli ändringar,";
+    }).catch(function () {});
+  }
 })();
 </script>
 </body>

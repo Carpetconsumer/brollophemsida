@@ -177,8 +177,9 @@ print("fine rings", len(fine), "pts", sum(len(f)//2 for f in fine), "| coarse ri
 
 land_fine = unary_union([Polygon(list(zip(f[0::2], f[1::2]))).buffer(0) for f in fine])
 
-# ---- key places (approximate chapel position; Köpstadsö village from GeoNames)
-chapel = P(11.9160, 57.6942)
+# ---- key places (chapel: centre of the OSM building outline, way 56433663)
+CHAPEL_LON, CHAPEL_LAT = 11.9096, 57.6912
+chapel = P(CHAPEL_LON, CHAPEL_LAT)
 kopst = WG.PIER   # boat lands at the ferry pier (Ångbåtsbryggan)
 venue = WG.VENUE
 print("chapel on land:", land_fine.contains(Point(chapel)), "| village on land:", land_fine.contains(Point(kopst)))
@@ -335,7 +336,7 @@ data = {
     "fineEnc": [enc(f) for f in fine], "coarse": coarse, "route": route, "routeM": round(route_m), "walk": walk_curve, "walkM": WG.WALK_M,
     "marks": marks,
     "places": {
-        "chapel": {"x": round(chapel[0], 1), "y": round(chapel[1], 1), "coord": dm(57.6942, "N", "S") + "  " + dm(11.9160, "O", "V")},
+        "chapel": {"x": round(chapel[0], 1), "y": round(chapel[1], 1), "coord": dm(CHAPEL_LAT, "N", "S") + "  " + dm(CHAPEL_LON, "O", "V")},
         "island": {"x": round(venue[0], 1), "y": round(venue[1], 1), "coord": dm(LAT0 - venue[1] / U_LAT, "N", "S") + "  " + dm(LON0 + venue[0] / U_LON, "O", "V")},
         "pier": {"x": round(kopst[0], 1), "y": round(kopst[1], 1)},
         "city": {"x": round(P(11.966, 57.7065)[0]), "y": round(P(11.966, 57.7065)[1])},

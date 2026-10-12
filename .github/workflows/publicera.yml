@@ -1,0 +1,52 @@
+# Testar varje push och pull request. Pushar till main publiceras på majaochfabian.se
+# så snart repots secrets CLOUDFLARE_API_TOKEN och CLOUDFLARE_ACCOUNT_ID finns (se CLAUDE.md, Publicering).
+name: Testa och publicera
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: dist/index.html är byggd från src och data
+        run: |
+          python3 tools/build_site.py
+          git diff --exit-code dist/ || (echo "::error::Kör python3 tools/build_site.py och committa dist/index.html" && exit 1)
+      - run: npx wrangler deploy --dry-run --outdir /tmp/worker
+
+  publicera:
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency: publicera
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Saknar Cloudflare-nyckel
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "::warning::CLOUDFLARE_API_TOKEN saknas, så sidan publicerades inte. Se CLAUDE.md, Publicering."
+      - uses: actions/checkout@v4
+        if: env.CLOUDFLARE_API_TOKEN != ''
+      - uses: actions/setup-node@v4
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        with:
+          node-version: 22
+          cache: npm
+      - if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npm ci
+      - if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npx wrangler d1 migrations apply majaochfabian-osa --remote
+      - if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npx wrangler deploy

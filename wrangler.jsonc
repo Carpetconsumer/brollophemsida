@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "majaochfabian",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-01",
+  // sidan byggs till dist/ av tools/build_site.py; bara /api/* går via workern
+  "assets": { "directory": "./dist", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "majaochfabian-osa", "database_id": "21ed19e3-b353-456d-bb55-6d95ac8c1593", "migrations_dir": "migrations" }
+  ],
+  // kräver att majaochfabian.se använder Cloudflares namnservrar (se CLAUDE.md, Publicering)
+  "routes": [
+    { "pattern": "majaochfabian.se", "custom_domain": true },
+    { "pattern": "www.majaochfabian.se", "custom_domain": true }
+  ],
+  "vars": {
+    "MAIL_FROM": "Maja & Fabian <osa@majaochfabian.se>",
+    "NOTIFY_TO": "majaochfabian@gmail.com"
+  },
+  // hemligheter sätts med `npx wrangler secret put <NAMN>`: ADMIN_KEY, RESEND_API_KEY, VASTTRAFIK_KEY
+  "observability": { "enabled": true }
+}

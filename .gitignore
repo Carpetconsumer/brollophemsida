@@ -4,3 +4,6 @@ __pycache__/
 tools/map/route_preview.png
 .DS_Store
 Thumbs.db
+node_modules/
+.wrangler/
+.dev.vars

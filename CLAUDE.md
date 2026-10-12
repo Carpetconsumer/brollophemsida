@@ -11,11 +11,16 @@ src/template.html       Sidan: <title>, typsnitt, <style>, markup och <script>. 
 data/mapdata.json       Genererad kartdata (kust, rutt, promenad, platser, vågmarkeringar) – redigera inte för hand
 tools/build_site.py     src/template.html + data/mapdata.json -> dist/index.html (en självständig fil)
 tools/map/              Python-pipeline som bygger data/mapdata.json (se nedan)
-dist/index.html         Byggd sida att publicera
+dist/index.html         Byggd sida att publicera (committas; CI kontrollerar att den är byggd från src + data)
+worker/                 Cloudflare Worker: serverar dist/ och /api/* (O.S.A., CSV-export, färjetider)
+migrations/             D1-schema (tabellen svar)
+test/                   Tester för workern (`npm test`, D1 ersätts av SQLite i minnet)
+wrangler.jsonc          Worker-konfiguration: assets, D1, domän, variabler
+.github/workflows/      Testar varje push; publicerar main på majaochfabian.se
 print/                  Tryckfiler för inbjudan (A6) – referens, används inte av sidan
 ```
 
-Bygg sidan: `python tools/build_site.py` (bara standardbiblioteket). Öppna `dist/index.html` direkt i en webbläsare för att testa.
+Bygg sidan: `python tools/build_site.py` (bara standardbiblioteket). Öppna `dist/index.html` direkt i en webbläsare för att testa sidan; formuläret och färjetiderna behöver `npm run dev` (Worker + lokal D1 på http://localhost:8787).
 
 ## Sidans uppbyggnad (src/template.html)
 
@@ -37,18 +42,38 @@ Bygg sidan: `python tools/build_site.py` (bara standardbiblioteket). Öppna `dis
 - `walk_geo.py` + `input/walk_water.npy` + `input/walk_reg.json`: vatten/land-mask från en satellitbild runt Köpstadsös södra udde, registrerad mot kartan. Används för att foga ihop udden med ön, öppna sundet mot ön i sydväst och placera bryggan, Smutten och promenaden.
 - Båtrutten räknas fram med A* genom vatten från kapellet till bryggan.
 
+## Backend (worker/)
+
+En Cloudflare Worker serverar `dist/` som statiska filer och svarar på `/api/*`:
+
+- `POST /api/osa` (`worker/osa.js`): validerar som formuläret, sparar en rad i D1-tabellen `svar` (inget skrivs över), mejlar gästen en bekräftelse och oss en avisering med svaret (reply-to åt båda hållen). Mejlen skickas efter svaret med `waitUntil`; kolumnen `bekraftelse` blir `skickad`, `misslyckad`, `spärrad` (fler än tre till samma adress per dygn) eller `av` (ingen e-post konfigurerad). Ett dolt fält `webbplats` fångar botar.
+- `GET /api/osa.csv?nyckel=<ADMIN_KEY>`: alla svar som CSV (semikolon + BOM, öppnas direkt i svenskt Excel).
+- `GET /api/farjor` (`worker/farjor.js`): färjor Köpstadsö → Saltholmen natten 10–11 juli 2027 från Västtrafiks Planera Resa v4 (`journeys`), cachas 6 h. Ger `{ avgangar: null }` utan nyckel eller innan Västtrafik har tidtabellen; då står tiderna i HTML:en kvar.
+- E-post (`worker/mail.js`): Resend om `RESEND_API_KEY` finns, annars Cloudflare Email Service om bindningen `EMAIL` finns, annars inget.
+
+Hemligheter (sätts med `npx wrangler secret put NAMN` eller i Cloudflare under Worker → Settings → Variables and Secrets): `ADMIN_KEY`, `RESEND_API_KEY`, `VASTTRAFIK_KEY`. Lokalt läggs de i `.dev.vars` (ignoreras av git). Vanliga variabler (`MAIL_FROM`, `NOTIFY_TO`) står i `wrangler.jsonc`.
+
+## Publicering
+
+Pushar till `main` testas och publiceras av `.github/workflows/publicera.yml` (`wrangler d1 migrations apply` + `wrangler deploy`). D1-databasen `majaochfabian-osa` finns redan i Cloudflare-kontot. Det här behöver göras en gång, i den här ordningen:
+
+1. **Flytta DNS till Cloudflare.** Domänen ligger hos one.com (namnservrar `ns01/ns02.one.com`, visar en parkeringssida). I Cloudflare: *Add a domain* → `majaochfabian.se` → Free. Byt sedan namnservrar hos one.com (DNS-inställningar → egna namnservrar) till de två som Cloudflare anger och vänta tills Cloudflare visar domänen som aktiv. Workerns `routes` kopplar `majaochfabian.se` och `www` och fungerar först då.
+2. **API-token för GitHub.** Cloudflare → My Profile → API Tokens → mallen *Edit Cloudflare Workers*, lägg till *Account → D1 → Edit* och *Zone → DNS → Edit*, och välj zonen majaochfabian.se. Lägg token som repo-secret `CLOUDFLARE_API_TOKEN` och konto-id:t (står på Cloudflares översiktssida) som `CLOUDFLARE_ACCOUNT_ID` i GitHub → Settings → Secrets and variables → Actions.
+3. **E-post.** Skapa ett konto på resend.com (gratis upp till 3 000 mejl/månad), lägg till domänen `majaochfabian.se`, lägg in DNS-posterna som Resend visar i Cloudflare DNS och skapa en API-nyckel med sändrätt → `npx wrangler secret put RESEND_API_KEY`. (Alternativ utan Resend: Cloudflare Email Service kräver Workers Paid, 5 USD/månad, för att mejla gästerna. Onboarda domänen där och lägg till `"send_email": [{ "name": "EMAIL" }]` i `wrangler.jsonc`.)
+4. **Nyckel för svarslistan.** `npx wrangler secret put ADMIN_KEY` med en lång slumpad sträng. Svaren hämtas sedan på `https://majaochfabian.se/api/osa.csv?nyckel=…`.
+5. **Västtrafik** (för färjetiderna). Registrera ett konto på developer.vasttrafik.se, skapa en applikation, prenumerera på *Planera Resa v4* och kopiera applikationens autentiseringsnyckel (base64) → `npx wrangler secret put VASTTRAFIK_KEY`.
+6. Merga till `main`. Kontrollera sedan att https://majaochfabian.se visar sidan och skicka ett testsvar.
+
 ## Kvar att göra
 
-1. **O.S.A. sparar inget** – formuläret validerar bara i webbläsaren (se `form.addEventListener("submit"…` och texten "Prototyp: svaren sparas inte någonstans än."). Behöver en backend, t.ex. Cloudflare Worker + D1/KV, Google Sheets eller Formspree, och bekräftelsemejl.
-2. **Hosting på majaochfabian.se** – t.ex. Cloudflare Pages/Netlify/GitHub Pages med `dist/` som utdata och domänen kopplad.
-3. **Toastmasters kontaktuppgifter** – Moas och Irmas telefonnummer och e-post är platshållare (`.ph`).
-4. **Färjetider** – lördagstiderna (23.32, 00.52, 02.19 från Köpstadsö) kommer från sommartidtabellen 2026 för linje 281/282. Uppdatera när 2027 års tidtabell släpps.
-5. *(Valfritt)* Live-avgångar från Västtrafiks API (Planera Resa v4). Kräver nyckel från developer.vasttrafik.se och en serverfunktion som håller nyckeln – får aldrig ligga i klientkoden.
-6. Kapellets koordinat i kartdatan är ungefärlig.
+1. **Publicera** – stegen under Publicering ovan (DNS, nycklar, e-post). Måste vara klart innan korten skickas.
+2. **Toastmasters kontaktuppgifter** – Moas och Irmas telefonnummer och e-post är platshållare (`.ph`) i Kontakt-sektionen.
+3. **Färjetider** – sidan visar lördagstiderna från sommartidtabellen 2026 (23.32, 00.52, 02.19 från Köpstadsö, linje 281/282) tills `/api/farjor` får 2027 års tider från Västtrafik. Byt gärna även de tryckta tiderna i `src/template.html` när tidtabellen släpps, så att de stämmer om API:et inte svarar.
 
 ## Arbetssätt
 
 - Ändra i `src/template.html`, kör `python tools/build_site.py`, testa `dist/index.html` i desktop- och mobilbredd (393 px) och i mörkt läge.
+- Ändringar i `worker/`: kör `npm test` och prova med `npm run dev`.
 - Behåll designen: blått `#1f3fb3` på `#f8f8f7`, tunna linjer, mycket luft.
 - Kontaktuppgifter (telefon, e-post) är verkliga – ändra dem inte utan att fråga.
 

@@ -10,7 +10,7 @@ export default {
       if (pathname === "/api/osa.csv") return await handleExport(request, env);
       if (pathname === "/api/farjor") return await handleFarjor(request, env, ctx);
     } catch (e) {
-      console.error(pathname, e);
+      console.error(pathname, String(e), e?.stack);
       return new Response(JSON.stringify({ ok: false, fel: "Något gick fel hos oss. Försök igen om en stund." }), {
         status: 500,
         headers: { "Content-Type": "application/json; charset=utf-8" },

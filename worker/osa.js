@@ -1,6 +1,7 @@
 // O.S.A.: tar emot formuläret (POST /api/osa), sparar i D1 och mejlar gästen och oss.
 // Svaren hämtas som CSV från GET /api/osa.csv?nyckel=<ADMIN_KEY>.
 import { mailConfigured, sendMail } from "./mail.js";
+import { guestMail, notifyMail } from "./mejl.js";
 
 const MAX = { namn: 120, epost: 200, fler: 500, mat: 500, halsning: 2000 };
 const MAX_CONFIRMATIONS_PER_DAY = 3;   // per e-postadress, så att formuläret inte kan användas för att spamma någon
@@ -20,34 +21,6 @@ export function validate(input) {
   for (const k of Object.keys(MAX)) if (svar[k].length > MAX[k]) return { fel: "Något av fälten är för långt. Korta ned det och försök igen." };
   if (!svar.kommer) { svar.fler = ""; svar.mat = ""; }
   return { svar };
-}
-
-function summary(s) {
-  const rows = [["Namn", s.namn], ["E-post", s.epost], ["Kommer", s.kommer ? "Ja" : "Nej"]];
-  if (s.kommer) rows.push(["Fler i sällskapet", s.fler || "–"], ["Mat och allergier", s.mat || "–"]);
-  rows.push(["Hälsning", s.halsning || "–"]);
-  return rows.map(([k, v]) => `${k}: ${v}`).join("\n");
-}
-
-export function guestMail(s) {
-  const first = s.namn.split(/\s+/)[0];
-  const intro = s.kommer
-    ? "Tack för att du svarade. Vi har noterat att du kommer, och vi ser fram emot att fira med dig."
-    : "Tack för att du svarade. Vad synd att du inte kan komma. Vi kommer att sakna dig.";
-  const day = s.kommer
-    ? "\n\nDagen i korthet\nVigseln börjar kl. 12.30 i S:ta Birgittas kapell, Klippan 2 i Göteborg. Efter vigseln åker vi tillsammans med båt ut till Köpstadsö, där vi firar i Societetshuset Smutten. Klädkod: kavaj.\nMer information finns på https://majaochfabian.se"
-    : "";
-  return {
-    subject: "Tack för ditt svar – Maja & Fabian 10 juli 2027",
-    text: `Hej ${first}!\n\n${intro}\n\nDitt svar\n${summary(s)}${day}\n\nVill du ändra något? Svara på det här mejlet så ordnar vi det.\n\nVarma hälsningar\nMaja & Fabian\n`,
-  };
-}
-
-export function notifyMail(s) {
-  return {
-    subject: `O.S.A.: ${s.namn} – ${s.kommer ? "kommer" : "kommer inte"}`,
-    text: `${summary(s)}\n\nSvara på det här mejlet för att nå ${s.namn} direkt.\n`,
-  };
 }
 
 export async function handleOsa(request, env, ctx) {
@@ -82,11 +55,11 @@ async function sendMails(env, s, id, confirm) {
   if (confirm) {
     jobs.push(sendMail(env, { to: s.epost, replyTo: env.NOTIFY_TO, ...guestMail(s) }).then(
       () => "skickad",
-      (e) => { console.error("bekräftelse", id, e); return "misslyckad"; }
+      (e) => { console.error("bekräftelse", id, String(e)); return "misslyckad"; }
     ));
   }
   if (env.NOTIFY_TO) {
-    jobs.push(sendMail(env, { to: env.NOTIFY_TO, replyTo: s.epost, ...notifyMail(s) }).catch((e) => console.error("avisering", id, e)));
+    jobs.push(sendMail(env, { to: env.NOTIFY_TO, replyTo: s.epost, ...notifyMail(s) }).catch((e) => console.error("avisering", id, String(e))));
   }
   const [result] = await Promise.all(jobs);
   if (confirm) await env.DB.prepare("UPDATE svar SET bekraftelse = ?1 WHERE id = ?2").bind(result, id).run();

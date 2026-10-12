@@ -49,7 +49,7 @@ En Cloudflare Worker serverar `dist/` som statiska filer och svarar på `/api/*`
 - `POST /api/osa` (`worker/osa.js`): validerar som formuläret, sparar en rad i D1-tabellen `svar` (inget skrivs över), mejlar gästen en bekräftelse och oss en avisering med svaret (reply-to åt båda hållen). Mejlen skickas efter svaret med `waitUntil`; kolumnen `bekraftelse` blir `skickad`, `misslyckad`, `spärrad` (fler än tre till samma adress per dygn) eller `av` (ingen e-post konfigurerad). Ett dolt fält `webbplats` fångar botar.
 - `GET /api/osa.csv?nyckel=<ADMIN_KEY>`: alla svar som CSV (semikolon + BOM, öppnas direkt i svenskt Excel).
 - `GET /api/farjor` (`worker/farjor.js`): färjor Köpstadsö → Saltholmen natten 10–11 juli 2027 från Västtrafiks Planera Resa v4 (`journeys`), cachas 6 h. Ger `{ avgangar: null }` utan nyckel eller innan Västtrafik har tidtabellen; då står tiderna i HTML:en kvar.
-- E-post (`worker/mail.js`): Resend om `RESEND_API_KEY` finns, annars Cloudflare Email Service om bindningen `EMAIL` finns, annars inget.
+- E-post (`worker/mail.js`): Resend om `RESEND_API_KEY` finns, annars Cloudflare Email Service om bindningen `EMAIL` finns, annars inget. Mejlen (`worker/mejl.js`) har en HTML-version i sidans stil (tabeller och inline-stil för Gmail/Outlook) och en textversion. Bekräftelsen till den som kommer innehåller "Dagen i korthet" – håll den i takt med hemsidan.
 
 Hemligheter (sätts med `npx wrangler secret put NAMN` eller i Cloudflare under Worker → Settings → Variables and Secrets): `ADMIN_KEY`, `RESEND_API_KEY`, `VASTTRAFIK_KEY`. Lokalt läggs de i `.dev.vars` (ignoreras av git). Vanliga variabler (`MAIL_FROM`, `NOTIFY_TO`) står i `wrangler.jsonc`.
 

@@ -85,9 +85,14 @@ function cell(v) {
 
 const stockholm = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm", dateStyle: "short", timeStyle: "short" });
 
-export async function handleExport(request, env) {
+// ?nyckel=<ADMIN_KEY> i adressen
+export async function hasAdminKey(request, env) {
   const key = new URL(request.url).searchParams.get("nyckel") || "";
-  if (!env.ADMIN_KEY || !key || !(await sameSecret(key, env.ADMIN_KEY))) return new Response("Fel nyckel.", { status: 403 });
+  return Boolean(env.ADMIN_KEY && key && (await sameSecret(key, env.ADMIN_KEY)));
+}
+
+export async function handleExport(request, env) {
+  if (!(await hasAdminKey(request, env))) return new Response("Fel nyckel.", { status: 403 });
   const { results } = await env.DB.prepare("SELECT * FROM svar ORDER BY id").all();
   const head = ["Tid", "Namn", "E-post", "Kommer", "Fler i sällskapet", "Mat och allergier", "Hälsning", "Bekräftelse"];
   const lines = [head.map(cell).join(";")];

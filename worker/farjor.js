@@ -68,7 +68,7 @@ export async function handleFarjor(request, env, ctx) {
 
   let avgangar = null;
   if (env.VASTTRAFIK_KEY) {
-    try { avgangar = await fetchDepartures(env); } catch (e) { console.error("färjor", e); }
+    try { avgangar = await fetchDepartures(env); } catch (e) { console.error("färjor:", String(e)); }
   }
   const res = new Response(JSON.stringify({ avgangar, hamtad: new Date().toISOString() }), {
     headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": `public, max-age=${avgangar ? 6 * 3600 : 15 * 60}` },

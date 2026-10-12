@@ -258,6 +258,35 @@ test("/api/farjor ger null när Västtrafik inte har tidtabellen än", async () 
   assert.equal((await res.json()).avgangar, null);
 });
 
+test("/api/farjor?datum= kräver nyckel och hämtar den natten utan cache", async () => {
+  env.VASTTRAFIK_KEY = "k";
+  env.KOPSTADSO_GID = "1";
+  env.SALTHOLMEN_GID = "2";
+  const asked = [];
+  globalThis.fetch = async (url) => {
+    const u = new URL(url);
+    if (u.pathname === "/token") return Response.json({ access_token: "tok" });
+    asked.push(u.searchParams.get("dateTime"));
+    return Response.json({ results: [
+      { tripLegs: [leg("2026-10-17T23:32:00+02:00", "2026-10-17T23:41:00+02:00")] },
+      { tripLegs: [leg("2026-10-18T05:00:00+02:00", "2026-10-18T05:09:00+02:00")] },
+    ] });
+  };
+  const base = "https://majaochfabian.se/api/farjor?datum=2026-10-17";
+  assert.equal((await worker.fetch(new Request(base), env, ctx)).status, 403);
+  assert.equal((await worker.fetch(new Request(base + "&nyckel=fel"), env, ctx)).status, 403);
+  assert.equal((await worker.fetch(new Request("https://majaochfabian.se/api/farjor?datum=x&nyckel=hemlig-nyckel"), env, ctx)).status, 403);
+  const res = await worker.fetch(new Request(base + "&nyckel=hemlig-nyckel"), env, ctx);
+  assert.deepEqual(await res.json(), { avgangar: [{ avgar: "23.32", framme: "23.41", linje: "281" }] });
+  assert.deepEqual(asked, ["2026-10-17T22:30:00+02:00"]);
+
+  globalThis.fetch = async (url) =>
+    new URL(url).pathname === "/token" ? Response.json({ access_token: "tok" }) : new Response('{"errorCode":6009}', { status: 400 });
+  const fail = await (await worker.fetch(new Request(base + "&nyckel=hemlig-nyckel"), env, ctx)).json();
+  assert.equal(fail.avgangar, null);
+  assert.match(fail.fel, /journeys 400/);
+});
+
 /* ---------- routing ---------- */
 
 test("okända /api-adresser ger 404, allt annat går till sidan", async () => {

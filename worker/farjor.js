@@ -1,10 +1,17 @@
 // GET /api/farjor: färjor från Köpstadsö till Saltholmen natten efter festen, från Västtrafiks API Planera Resa v4.
 // Kräver secret VASTTRAFIK_KEY (autentiseringsnyckeln från developer.vasttrafik.se). Utan nyckel, eller innan Västtrafik
 // har lagt in tidtabellen för juli 2027, svarar den { avgangar: null } och sidan visar de tider som står i HTML:en.
+// Test: /api/farjor?datum=ÅÅÅÅ-MM-DD&nyckel=<ADMIN_KEY> hämtar en annan natt, utan cache, och visar eventuellt fel.
+import { hasAdminKey } from "./osa.js";
 
 const API = "https://ext-api.vasttrafik.se";
-const FROM = "2027-07-10T22:30:00+02:00";
-const UNTIL = Date.parse("2027-07-11T04:00:00+02:00");
+const NIGHT = "2027-07-10";
+
+// från 22.30 den kvällen till 04.00 morgonen efter, svensk sommartid
+function night(date) {
+  const from = `${date}T22:30:00+02:00`;
+  return { from, until: Date.parse(from) + 5.5 * 3600 * 1000 };
+}
 
 async function token(env) {
   const res = await fetch(`${API}/token`, {
@@ -33,7 +40,7 @@ const hhmm = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm", ho
 const fmt = (iso) => hhmm.format(new Date(iso)).replace(":", ".");
 
 // Direktturer (en enda tripLeg) ur ett journeys-svar, sorterade, utan dubbletter.
-export function parseJourneys(d) {
+export function parseJourneys(d, until = night(NIGHT).until) {
   const out = [];
   for (const r of d?.results || []) {
     const legs = r.tripLegs || [];
@@ -42,25 +49,32 @@ export function parseJourneys(d) {
     const dep = l.origin?.estimatedOtherwisePlannedTime || l.origin?.plannedTime || l.estimatedOtherwisePlannedDepartureTime || l.plannedDepartureTime;
     const arr = l.destination?.estimatedOtherwisePlannedTime || l.destination?.plannedTime || l.estimatedOtherwisePlannedArrivalTime || l.plannedArrivalTime;
     const t = Date.parse(dep);
-    if (Number.isNaN(t) || Number.isNaN(Date.parse(arr)) || t > UNTIL) continue;
+    if (Number.isNaN(t) || Number.isNaN(Date.parse(arr)) || t > until) continue;
     out.push({ t, avgar: fmt(dep), framme: fmt(arr), linje: l.serviceJourney?.line?.shortName || l.serviceJourney?.line?.name || "" });
   }
   out.sort((a, b) => a.t - b.t);
   return out.filter((x, i) => i === 0 || x.avgar !== out[i - 1].avgar).map(({ t, ...rest }) => rest);
 }
 
-async function fetchDepartures(env) {
+async function fetchDepartures(env, date = NIGHT) {
+  const { from: dateTime, until } = night(date);
   const tok = await token(env);
   const [from, to] = await Promise.all([
     env.KOPSTADSO_GID || stopArea("Köpstadsö", tok),
     env.SALTHOLMEN_GID || stopArea("Saltholmen", tok),
   ]);
-  const q = new URLSearchParams({ originGid: from, destinationGid: to, dateTime: FROM, limit: "6" });
-  const list = parseJourneys(await api(`/journeys?${q}`, tok));
+  const q = new URLSearchParams({ originGid: from, destinationGid: to, dateTime, limit: "6" });
+  const list = parseJourneys(await api(`/journeys?${q}`, tok), until);
   return list.length ? list : null;
 }
 
 export async function handleFarjor(request, env, ctx) {
+  const datum = new URL(request.url).searchParams.get("datum");
+  if (datum) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(datum) || !(await hasAdminKey(request, env))) return new Response("Fel nyckel.", { status: 403 });
+    try { return Response.json({ avgangar: await fetchDepartures(env, datum) }); } catch (e) { return Response.json({ avgangar: null, fel: String(e) }); }
+  }
+
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const key = new Request(new URL("/api/farjor", request.url));
   const hit = cache && (await cache.match(key));

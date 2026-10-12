@@ -79,10 +79,26 @@ test("svar sparas, gästen får bekräftelse och vi får avisering", async () =>
   const notify = sent.find((m) => m.to === "majaochfabian@gmail.com");
   assert.match(guest.text, /^Hej Anna!/);
   assert.match(guest.text, /Mat och allergier: Vegetariskt/);
-  assert.match(guest.text, /kl\. 12\.30/);
+  assert.match(guest.text, /Kl\. 12\.30 i S:ta Birgittas kapell/);
+  assert.match(guest.html, /Dagen i korthet/);
+  assert.match(notify.html, /Anna Svensson kommer/);
   assert.equal(guest.replyTo, "majaochfabian@gmail.com");
   assert.equal(notify.subject, "O.S.A.: Anna Svensson – kommer");
   assert.equal(notify.replyTo, "anna@example.com");
+});
+
+test("mejlen escapar det gästen skriver och nej-svaret saknar dagens program", async () => {
+  await worker.fetch(post({ ...yes, namn: "<b>Eva</b> & co", halsning: "rad 1\n<script>x</script>" }), env, ctx);
+  await worker.fetch(post({ ...yes, epost: "bo@example.com", namn: "Bo", kommer: "nej" }), env, ctx);
+  await ctx.done();
+  const [ja, , nej] = sent;
+  assert.match(ja.html, /Hej &lt;b&gt;Eva&lt;\/b&gt;!/);
+  assert.match(ja.html, /rad 1<br>&lt;script&gt;x&lt;\/script&gt;/);
+  assert.doesNotMatch(ja.html, /<script>|<b>Eva/);
+  assert.match(ja.text, /^Hej <b>Eva<\/b>!/);
+  assert.match(nej.html, /Vad synd att du inte kan komma/);
+  assert.doesNotMatch(nej.html, /Dagen i korthet/);
+  assert.doesNotMatch(nej.text, /Dagen i korthet/);
 });
 
 test("felaktigt formulär ger 400 med svensk text och sparar inget", async () => {
@@ -140,6 +156,8 @@ test("Resend används när RESEND_API_KEY finns", async () => {
   assert.deepEqual(body.to, ["anna@example.com"]);
   assert.equal(body.from, "Maja & Fabian <osa@majaochfabian.se>");
   assert.equal(body.reply_to, "majaochfabian@gmail.com");
+  assert.match(body.html, /^<!DOCTYPE html>/);
+  assert.match(body.text, /^Hej Anna!/);
   assert.equal(rows()[0].bekraftelse, "skickad");
 });
 

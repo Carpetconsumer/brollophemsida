@@ -595,9 +595,12 @@ footer { position: relative; z-index: 2; background: var(--ink); color: var(--on
   }
   function boatGlyph(x, y, ang) {
     ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(1.35, 1.35);
+    // ferry from above: hull outline, open deck, cabin
     ctx.fillStyle = C.ink;
-    ctx.beginPath(); ctx.moveTo(11, 0); ctx.quadraticCurveTo(5, -5.5, -9, -4.5); ctx.lineTo(-9, 4.5); ctx.quadraticCurveTo(5, 5.5, 11, 0); ctx.fill();
-    ctx.fillStyle = C.paper; ctx.fillRect(-5, -2, 7, 4);
+    ctx.beginPath(); ctx.moveTo(13, 0); ctx.quadraticCurveTo(12, -4.8, 5, -5); ctx.lineTo(-10, -5); ctx.quadraticCurveTo(-12, -5, -12, -3); ctx.lineTo(-12, 3); ctx.quadraticCurveTo(-12, 5, -10, 5); ctx.lineTo(5, 5); ctx.quadraticCurveTo(12, 4.8, 13, 0); ctx.fill();
+    ctx.fillStyle = C.paper;
+    ctx.beginPath(); ctx.moveTo(11.2, 0); ctx.quadraticCurveTo(10.4, -3.6, 4.8, -3.8); ctx.lineTo(-9.6, -3.8); ctx.quadraticCurveTo(-10.8, -3.8, -10.8, -2.6); ctx.lineTo(-10.8, 2.6); ctx.quadraticCurveTo(-10.8, 3.8, -9.6, 3.8); ctx.lineTo(4.8, 3.8); ctx.quadraticCurveTo(10.4, 3.6, 11.2, 0); ctx.fill();
+    ctx.fillStyle = C.ink; ctx.fillRect(-8, -2.4, 13.5, 4.8);
     ctx.restore();
   }
 

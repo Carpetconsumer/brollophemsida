@@ -13,7 +13,7 @@ const DAY = [
   ["Vigsel", "Kl. 12.30 i S:ta Birgittas kapell, Klippan 2, Göteborg", MAPS, "Hitta hit"],
   ["Båten", "Efter vigseln åker vi tillsammans med båt ut till Köpstadsö. Ingen behöver ordna egen resa."],
   ["Festen", "Societetshuset Smutten på Köpstadsö, en kort promenad från bryggan."],
-  ["Klädkod", "Kavaj. Kvällen kan bli kylig."],
+  ["Klädkod", "Kavaj. Gärna en sommarkostym i ljusa färger, en påhittig kavaj eller en färgglad klänning – men framför allt: var er själva."],
   ["Barn", "Endast vuxna."],
   ["Tal och spex", "Anmäl till våra toastmasters Moa och Irma. Kontaktuppgifter finns på hemsidan."],
   ["Hemresa", "Skärgårdsfärjan går från Köpstadsö till Saltholmen under natten. Tiderna finns på hemsidan."],

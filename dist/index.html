@@ -56,14 +56,10 @@ a { color: inherit; }
 .top a { pointer-events: auto; text-decoration: none; }
 .top:not(.on):not(:focus-within) a { pointer-events: none; }
 .brand { font-family: var(--font-display); font-style: italic; font-weight: 300; font-size: 24px; line-height: 1; letter-spacing: 0.01em; }
-.top nav { display: flex; align-items: center; gap: 28px; }
-.top nav a { padding-block: 6px; border-bottom: 1px solid transparent; transition: border-color .2s; }
-.top nav a:hover { border-color: currentColor; }
-.top nav .info { display: inline-flex; padding: 11px; margin: -11px; border: 0; transition: color .2s; }
-.top nav .info svg { display: block; }
-.top nav .info:hover { color: var(--ink-deep); }
-.top nav .hide-sm { display: inline; }
-@media (max-width: 720px) { .top nav .hide-sm { display: none; } }
+.top nav { display: flex; align-items: center; }
+.letter { display: inline-flex; padding: 12.5px 9px; margin: -12.5px -9px; transition: color .2s; }
+.letter svg { display: block; }
+.letter:hover { color: var(--ink-deep); }
 
 /* ---------- story: sticky chart + scrolling chapters ---------- */
 .story { position: relative; }
@@ -138,7 +134,6 @@ html.intro .cue { animation-delay: 1.65s; }
   .step-boat .card.riding h2, .step-boat .card.riding p { max-height: 0; opacity: 0; margin-top: -14px; }
   .step-boat .card.riding .instruments { border-top: 0; padding-top: 0; }
   .instruments { transition: padding .45s ease; }
-  .top nav a { padding-block: 12px; }
 }
 
 /* outro */
@@ -225,10 +220,7 @@ if (!location.hash && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
 <header class="top">
   <a class="brand" href="#top">Maja &amp; Fabian</a>
   <nav aria-label="Huvudmeny">
-    <a class="caps hide-sm" href="#vigsel">Dagen</a>
-    <a class="caps hide-sm" href="#bra-att-veta">Bra att veta</a>
-    <a class="caps hide-sm" href="#kontakt">Kontakt</a>
-    <a class="info" href="#bra-att-veta" aria-label="Bra att veta" title="Bra att veta"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="10"></circle><path d="M11 9.8 V16"></path><circle cx="11" cy="6.6" r="0.9" fill="currentColor" stroke="none"></circle></svg></a>
+    <a class="letter" href="#bra-att-veta" aria-label="Bra att veta" title="Bra att veta"><svg width="26" height="19" viewBox="0 0 26 19" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="0.6" y="0.6" width="24.8" height="17.8" rx="1"></rect><path d="M1.4 1.6 L13 10.6 L24.6 1.6"></path></svg></a>
   </nav>
 </header>
 

@@ -24,6 +24,8 @@ Bygg sidan: `python tools/build_site.py` (bara standardbiblioteket). Öppna `dis
 
 ## Sidans uppbyggnad (src/template.html)
 
+- **Intro**: vid första laddningen (utan `#ankare` i adressen och utan `prefers-reduced-motion`) sätter ett litet skript i `<head>` klassen `intro` på `<html>`. Kartan tonar in, sedan glider hero-texten in rad för rad, och scrollningen är låst tills pilen är på plats (ca 2,7 s, `animationend` på `.cue`).
+- **Toppraden** (`.top`) är dold över hero och visas när man scrollat 40 % av skärmhöjden (`updateUi`). Längst till höger en info-ikon som leder till Bra att veta (på mobil den enda länken).
 - **Scrollberättelse**: en `position: sticky` canvas (`#map`) bakom sektionerna `hero → chapel (#vigsel) → boat (#baten) → island (#festen) → out`. Varje `<section data-cam="…">` styr kameran; `camFor(name, t)` ger `[x, y, s, fx, fy]` där `s` = världsenheter över skärmens kortsida och `fx/fy` = var kamerans centrum ligger på skärmen. Övergångar interpoleras med van Wijk/d3-zoom (`izoom`).
 - **Båtfärden**: `D.route` ritas fram till båten (`boatGlyph`, en färja sedd ovanifrån) under `#baten`; instrumenten (distans i sjömil, kurs, kompassnål) uppdateras i `updateUi`. På mobil (≤760 px) ligger båtkortet fast i nederkant och fälls ihop till bara instrumenten (`.riding`) efter 30 % av färden.
 - **Promenaden**: `D.walk` (brygga → Smutten, uppmätt 774 m) ritas som prickad stig när man kommer till `#festen` (`walkT` i `state()`).

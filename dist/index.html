@@ -363,7 +363,7 @@ if (!location.hash && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
       <div class="grid3">
         <div class="item"><span class="who">Maja</span><div class="contact-line"><span class="caps">Telefon</span><a class="num" href="tel:+46705631997">070-563 19 97</a></div><div class="contact-line"><span class="caps">E-post</span><a href="mailto:majaochfabian@gmail.com">majaochfabian@gmail.com</a></div></div>
         <div class="item"><span class="who">Fabian</span><div class="contact-line"><span class="caps">Telefon</span><a class="num" href="tel:+46706715253">070-671 52 53</a></div><div class="contact-line"><span class="caps">E-post</span><a href="mailto:majaochfabian@gmail.com">majaochfabian@gmail.com</a></div></div>
-        <div class="item"><span class="who">Toastmasters</span><div class="contact-line"><span class="caps">Moa</span><span class="ph">[telefonnummer]</span></div><div class="contact-line"><span class="caps">Irma</span><span class="ph">[telefonnummer]</span></div><div class="contact-line"><span class="caps">E-post</span><a href="mailto:toast.majaochfabian@protonmail.com">toast.majaochfabian@protonmail.com</a></div></div>
+        <div class="item"><span class="who">Toastmasters</span><div class="contact-line"><span class="caps">E-post</span><a href="mailto:toast.majaochfabian@protonmail.com">toast.majaochfabian@protonmail.com</a></div></div>
       </div>
     </div>
   </section>
@@ -610,11 +610,9 @@ if (!location.hash && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
   }
   function boatGlyph(x, y, ang) {
     ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.scale(1.35, 1.35);
-    // boat from above: hull outline around an open deck
     ctx.fillStyle = C.ink;
-    ctx.beginPath(); ctx.moveTo(13, 0); ctx.quadraticCurveTo(12, -4.8, 5, -5); ctx.lineTo(-10, -5); ctx.quadraticCurveTo(-12, -5, -12, -3); ctx.lineTo(-12, 3); ctx.quadraticCurveTo(-12, 5, -10, 5); ctx.lineTo(5, 5); ctx.quadraticCurveTo(12, 4.8, 13, 0); ctx.fill();
-    ctx.fillStyle = C.paper;
-    ctx.beginPath(); ctx.moveTo(11.2, 0); ctx.quadraticCurveTo(10.4, -3.6, 4.8, -3.8); ctx.lineTo(-9.6, -3.8); ctx.quadraticCurveTo(-10.8, -3.8, -10.8, -2.6); ctx.lineTo(-10.8, 2.6); ctx.quadraticCurveTo(-10.8, 3.8, -9.6, 3.8); ctx.lineTo(4.8, 3.8); ctx.quadraticCurveTo(10.4, 3.6, 11.2, 0); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(11, 0); ctx.quadraticCurveTo(5, -5.5, -9, -4.5); ctx.lineTo(-9, 4.5); ctx.quadraticCurveTo(5, 5.5, 11, 0); ctx.fill();
+    ctx.fillStyle = C.paper; ctx.fillRect(-5, -2, 7, 4);
     ctx.restore();
   }
 

@@ -69,7 +69,7 @@ Pushar till `main` testas och publiceras av `.github/workflows/publicera.yml` (`
 ## Kvar att göra
 
 1. **Publicera** – stegen under Publicering ovan (DNS, nycklar, e-post). Måste vara klart innan korten skickas.
-2. **Toastmasters kontaktuppgifter** – Moas och Irmas telefonnummer och e-post är platshållare (`.ph`) i Kontakt-sektionen.
+2. **Toastmasters kontaktuppgifter** – Moas och Irmas telefonnummer är platshållare (`.ph`) i Kontakt-sektionen.
 3. **Färjetider** – sidan visar lördagstiderna från sommartidtabellen 2026 (23.32, 00.52, 02.19 från Köpstadsö, linje 281/282) tills `/api/farjor` får 2027 års tider från Västtrafik. Byt gärna även de tryckta tiderna i `src/template.html` när tidtabellen släpps, så att de stämmer om API:et inte svarar.
 
 ## Arbetssätt

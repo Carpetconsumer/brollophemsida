@@ -27,7 +27,7 @@ Bygg sidan: `python tools/build_site.py` (bara standardbiblioteket). Öppna `dis
 - **Intro**: vid första laddningen (utan `#ankare` i adressen och utan `prefers-reduced-motion`) sätter ett litet skript i `<head>` klassen `intro` på `<html>`. Kartan tonar in, sedan glider hero-texten in rad för rad, och scrollningen är låst tills pilen är på plats (ca 2,7 s, `animationend` på `.cue`).
 - **Toppraden** (`.top`) är dold över hero och visas när man scrollat 40 % av skärmhöjden (`updateUi`). Dess enda länk är ett brev längst till höger som leder till O.S.A.
 - **Scrollberättelse**: en `position: sticky` canvas (`#map`) bakom sektionerna `hero → chapel (#vigsel) → boat (#baten) → island (#festen) → out`. Varje `<section data-cam="…">` styr kameran; `camFor(name, t)` ger `[x, y, s, fx, fy]` där `s` = världsenheter över skärmens kortsida och `fx/fy` = var kamerans centrum ligger på skärmen. Övergångar interpoleras med van Wijk/d3-zoom (`izoom`).
-- **Båtfärden**: `D.route` ritas fram till båten (`boatGlyph`, en båt sedd ovanifrån) under `#baten`; instrumenten (distans i sjömil, kurs, kompassnål) uppdateras i `updateUi`. På mobil (≤760 px) ligger båtkortet fast i nederkant och fälls ihop till bara instrumenten (`.riding`) efter 30 % av färden.
+- **Båtfärden**: `D.route` ritas fram till båten (`boatGlyph`, en fylld båtsilhuett med ljus ruff, utan svallvågor) under `#baten`; instrumenten (distans i sjömil, kurs, kompassnål) uppdateras i `updateUi`. På mobil (≤760 px) ligger båtkortet fast i nederkant och fälls ihop till bara instrumenten (`.riding`) efter 30 % av färden.
 - **Promenaden**: `D.walk` (brygga → Smutten, uppmätt 774 m) ritas som prickad stig när man kommer till `#festen` (`walkT` i `state()`).
 - **Karta**: `D.fineEnc` är kustlinjer i ett kompakt delta-format (halva enheter, 2 tecken per punkt); avkodas i `decode()`, förenklas i tre detaljnivåer (Douglas–Peucker, `FINE_TOL`) och ritas med mjuka kurvor. `D.coarse` används vid utzoomning. Världsenheter: 1 enhet ≈ 5,57 m.
 - **Teman**: färgtoken i `:root` med mörkt läge via `prefers-color-scheme` och `[data-theme]`. `prefers-reduced-motion` respekteras.
@@ -69,8 +69,7 @@ Pushar till `main` testas och publiceras av `.github/workflows/publicera.yml` (`
 ## Kvar att göra
 
 1. **Publicera** – stegen under Publicering ovan (DNS, nycklar, e-post). Måste vara klart innan korten skickas.
-2. **Toastmasters kontaktuppgifter** – Moas och Irmas telefonnummer och e-post är platshållare (`.ph`) i Kontakt-sektionen.
-3. **Färjetider** – sidan visar lördagstiderna från sommartidtabellen 2026 (23.32, 00.52, 02.19 från Köpstadsö, linje 281/282) tills `/api/farjor` får 2027 års tider från Västtrafik. Byt gärna även de tryckta tiderna i `src/template.html` när tidtabellen släpps, så att de stämmer om API:et inte svarar.
+2. **Färjetider** – sidan visar lördagstiderna från sommartidtabellen 2026 (23.32, 00.52, 02.19 från Köpstadsö, linje 281/282) tills `/api/farjor` får 2027 års tider från Västtrafik. Byt gärna även de tryckta tiderna i `src/template.html` när tidtabellen släpps, så att de stämmer om API:et inte svarar.
 
 ## Arbetssätt
 

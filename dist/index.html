@@ -22,6 +22,8 @@
   --map-mark: #93a3dc;
   --on-ink: #f8f8f7;
   --error: #b3261e;
+  --brand: #1f3fb3;   /* sidfoten: samma blå i ljust och mörkt läge */
+  --on-brand: #f8f8f7;
   --font-display: "Cormorant Garamond", "EB Garamond", Garamond, "Times New Roman", serif;
   --font-body: "Jost", "Futura", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
   --gutter: max(16px, 5.5vw);
@@ -138,7 +140,7 @@ html.intro .cue { animation-delay: 1.65s; }
 
 /* outro */
 .step-out { min-height: 120vh; min-height: 120svh; align-items: center; text-align: center; gap: 22px; }
-.step-out .line { margin: 0; font-family: var(--font-display); font-style: italic; font-weight: 300; font-size: clamp(44px, 7vw, 104px); line-height: 1; padding: 6px 20px; background: rgb(var(--paper-rgb) / 0.8); }
+.step-out .line { margin: 0; font-family: var(--font-display); font-style: italic; font-weight: 300; font-size: clamp(44px, 7vw, 104px); line-height: 1; padding: 14px 32px 18px; background: rgb(var(--paper-rgb) / 0.93); border: 1px solid var(--ink); }
 .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 34px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); text-decoration: none; cursor: pointer; font: inherit; transition: background .2s, color .2s; }
 .btn:hover { background: var(--ink); color: var(--on-ink); }
 .btn:disabled { opacity: .6; cursor: progress; }
@@ -204,7 +206,7 @@ form { display: flex; flex-direction: column; gap: 30px; }
 .contact-line a { text-decoration: none; border-bottom: 1px solid var(--rule); align-self: flex-start; overflow-wrap: anywhere; }
 .contact-line a:hover { border-color: currentColor; }
 
-footer { position: relative; z-index: 2; background: var(--ink); color: var(--on-ink); padding: 54px var(--gutter) calc(54px + env(safe-area-inset-bottom, 0px)); }
+footer { position: relative; z-index: 2; background: var(--brand); color: var(--on-brand); padding: 54px var(--gutter) calc(54px + env(safe-area-inset-bottom, 0px)); }
 .foot { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px; }
 .foot .brand { font-size: 30px; }
 </style>

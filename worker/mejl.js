@@ -2,6 +2,7 @@
 // Varje mejl har en HTML-version i sidans stil och en textversion för klienter som inte visar HTML.
 
 const SITE = "https://majaochfabian.se";
+const CALENDAR = SITE + "/brollop.ics";   // byggs av tools/build_site.py
 const MAPS = "https://www.google.com/maps/search/?api=1&query=S%3Ata+Birgittas+kapell+Klippan+2+G%C3%B6teborg";
 const INK = "#1f3fb3", PAPER = "#f8f8f7", RULE = "#c9d1ee";
 const DISPLAY = "'Cormorant Garamond', Garamond, Georgia, 'Times New Roman', serif";
@@ -13,7 +14,7 @@ const DAY = [
   ["Vigsel", "Kl. 12.30 i S:ta Birgittas kapell, Klippan 2, Göteborg", MAPS, "Hitta hit"],
   ["Båten", "Efter vigseln åker vi tillsammans med båt ut till Köpstadsö. Ingen behöver ordna egen resa."],
   ["Festen", "Societetshuset Smutten på Köpstadsö, en kort promenad från bryggan."],
-  ["Klädkod", "Kavaj. Gärna en sommarkostym i ljusa färger, en påhittig kavaj eller en färgglad klänning – men framför allt: var er själva."],
+  ["Klädkod", "Kavaj. Gärna en sommarkostym i ljusa färger, en påhittig kavaj eller en färgglad klänning."],
   ["Barn", "Endast vuxna."],
   ["Tal och spex", "Anmäl till våra toastmasters Moa och Irma. Kontaktuppgifter finns på hemsidan."],
   ["Hemresa", "Skärgårdsfärjan går från Köpstadsö till Saltholmen under natten. Tiderna finns på hemsidan."],
@@ -24,7 +25,7 @@ const firstName = (s) => s.namn.split(/\s+/)[0];
 
 function answerRows(s) {
   const rows = [["Namn", s.namn], ["E-post", s.epost], ["Kommer", s.kommer ? "Ja" : "Nej"]];
-  if (s.kommer) rows.push(["Fler i sällskapet", s.fler || "–"], ["Mat och allergier", s.mat || "–"]);
+  if (s.kommer) rows.push(["Fler i sällskapet", s.fler || "–"], ["Mat och allergier", s.mat || "–"], ["Låtönskning", s.lat || "–"]);
   rows.push(["Hälsning", s.halsning || "–"]);
   return rows;
 }
@@ -53,10 +54,12 @@ function facts(rows) {
   return `<tr><td style="padding-bottom:18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid ${RULE};">${tr}</table></td></tr>`;
 }
 
-const button = (href, t) => `<tr><td style="padding-top:10px;padding-bottom:26px;">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-<td bgcolor="${INK}" style="background-color:${INK};"><a href="${esc(href)}" style="display:inline-block;padding-top:15px;padding-bottom:15px;padding-left:30px;padding-right:30px;font-family:${BODY};font-size:12px;line-height:16px;letter-spacing:3px;color:${PAPER};text-decoration:none;">${esc(t.toUpperCase())}</a></td>
-</tr></table></td></tr>`;
+// knappar på rad (radbryts på smala skärmar); den första fylld, resten med kant
+const buttons = (...list) => `<tr><td style="padding-top:10px;padding-bottom:26px;">
+${list.map(([href, t], i) => `<table role="presentation" align="left" cellpadding="0" cellspacing="0" border="0" style="margin-right:12px;margin-bottom:10px;"><tr>
+<td${i ? "" : ` bgcolor="${INK}"`} style="${i ? `border:1px solid ${INK};` : `background-color:${INK};border:1px solid ${INK};`}"><a href="${esc(href)}" style="display:inline-block;padding-top:14px;padding-bottom:14px;padding-left:28px;padding-right:28px;font-family:${BODY};font-size:12px;line-height:16px;letter-spacing:3px;color:${i ? INK : PAPER};text-decoration:none;">${esc(t.toUpperCase())}</a></td>
+</tr></table>`).join("\n")}
+</td></tr>`;
 
 function page({ title, preheader, rows }) {
   return `<!DOCTYPE html>
@@ -104,13 +107,13 @@ export function guestMail(s) {
     : "Tack för att du svarade. Vad synd att du inte kan komma. Vi kommer att sakna dig.";
   const change = "Vill du ändra något? Svara på det här mejlet så ordnar vi det.";
 
-  const dayText = s.kommer ? `\n\nDagen i korthet\n${textRows(DAY.map(([k, v]) => [k, v]))}\n\nMer information finns på ${SITE}` : "";
+  const dayText = s.kommer ? `\n\nDagen i korthet\n${textRows(DAY.map(([k, v]) => [k, v]))}\n\nMer information finns på ${SITE}\nLägg till dagen i din kalender: ${CALENDAR}` : "";
   const text = `Hej ${first}!\n\n${intro}${dayText}\n\nDitt svar\n${textRows(answerRows(s))}\n\n${change}\n\nVarma hälsningar\nMaja & Fabian\n`;
 
   const rows = [
     `<tr><td style="padding-bottom:14px;font-family:${DISPLAY};font-size:34px;line-height:38px;font-weight:300;color:${INK};">Hej ${esc(first)}!</td></tr>`,
     para(esc(intro)),
-    ...(s.kommer ? [heading("Dagen i korthet"), facts(DAY), button(SITE, "Till hemsidan")] : []),
+    ...(s.kommer ? [heading("Dagen i korthet"), facts(DAY), buttons([SITE, "Till hemsidan"], [CALENDAR, "Lägg till i kalendern"])] : []),
     heading("Ditt svar"),
     facts(answerRows(s)),
     para(esc(change)),

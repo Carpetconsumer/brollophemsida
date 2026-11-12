@@ -3,7 +3,7 @@
 import { mailConfigured, sendMail } from "./mail.js";
 import { guestMail, notifyMail } from "./mejl.js";
 
-const MAX = { namn: 120, epost: 200, fler: 500, mat: 500, halsning: 2000 };
+const MAX = { namn: 120, epost: 200, fler: 500, mat: 500, lat: 300, halsning: 2000 };
 const MAX_CONFIRMATIONS_PER_DAY = 3;   // per e-postadress, så att formuläret inte kan användas för att spamma någon
 
 const json = (body, status = 200) =>
@@ -14,12 +14,12 @@ export function validate(input) {
   if (!input || typeof input !== "object") return { fel: "Något gick fel med formuläret. Ladda om sidan och försök igen." };
   const str = (k) => (typeof input[k] === "string" ? input[k].trim() : "");
   const line = (k) => str(k).replace(/\s+/g, " ");   // enradiga fält: inga radbrytningar i t.ex. ämnesraden
-  const svar = { namn: line("namn"), epost: line("epost"), kommer: input.kommer === "ja", fler: line("fler"), mat: line("mat"), halsning: str("halsning") };
+  const svar = { namn: line("namn"), epost: line("epost"), kommer: input.kommer === "ja", fler: line("fler"), mat: line("mat"), lat: line("lat"), halsning: str("halsning") };
   if (input.kommer !== "ja" && input.kommer !== "nej") return { fel: "Välj om du kommer eller inte." };
   if (!svar.namn) return { fel: "Skriv ditt namn, så vet vi vem som svarar." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(svar.epost)) return { fel: "Skriv en e-postadress som vi kan skicka bekräftelsen till." };
   for (const k of Object.keys(MAX)) if (svar[k].length > MAX[k]) return { fel: "Något av fälten är för långt. Korta ned det och försök igen." };
-  if (!svar.kommer) { svar.fler = ""; svar.mat = ""; }
+  if (!svar.kommer) { svar.fler = ""; svar.mat = ""; svar.lat = ""; }
   return { svar };
 }
 
@@ -43,8 +43,8 @@ export async function handleOsa(request, env, ctx) {
   const status = !mailConfigured(env) ? "av" : (recent?.n ?? 0) >= MAX_CONFIRMATIONS_PER_DAY ? "spärrad" : "";
 
   const row = await env.DB.prepare(
-    "INSERT INTO svar (namn, epost, kommer, fler, mat, halsning, bekraftelse) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) RETURNING id"
-  ).bind(s.namn, s.epost, s.kommer ? 1 : 0, s.fler, s.mat, s.halsning, status).first();
+    "INSERT INTO svar (namn, epost, kommer, fler, mat, lat, halsning, bekraftelse) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8) RETURNING id"
+  ).bind(s.namn, s.epost, s.kommer ? 1 : 0, s.fler, s.mat, s.lat, s.halsning, status).first();
 
   if (mailConfigured(env)) ctx.waitUntil(sendMails(env, s, row.id, status === ""));
   return json({ ok: true, bekraftelse: status === "" });
@@ -94,11 +94,11 @@ export async function hasAdminKey(request, env) {
 export async function handleExport(request, env) {
   if (!(await hasAdminKey(request, env))) return new Response("Fel nyckel.", { status: 403 });
   const { results } = await env.DB.prepare("SELECT * FROM svar ORDER BY id").all();
-  const head = ["Tid", "Namn", "E-post", "Kommer", "Fler i sällskapet", "Mat och allergier", "Hälsning", "Bekräftelse"];
+  const head = ["Tid", "Namn", "E-post", "Kommer", "Fler i sällskapet", "Mat och allergier", "Låtönskning", "Hälsning", "Bekräftelse"];
   const lines = [head.map(cell).join(";")];
   for (const r of results) {
     const t = stockholm.format(new Date(r.skapad));
-    lines.push([t, r.namn, r.epost, r.kommer ? "Ja" : "Nej", r.fler, r.mat, r.halsning, r.bekraftelse].map(cell).join(";"));
+    lines.push([t, r.namn, r.epost, r.kommer ? "Ja" : "Nej", r.fler, r.mat, r.lat, r.halsning, r.bekraftelse].map(cell).join(";"));
   }
   return new Response("﻿" + lines.join("\r\n") + "\r\n", {
     headers: {

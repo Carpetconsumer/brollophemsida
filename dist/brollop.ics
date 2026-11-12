@@ -1,0 +1,23 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//majaochfabian.se//SV
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:brollop-2027@majaochfabian.se
+DTSTAMP:20261112T000000Z
+DTSTART:20270710T103000Z
+DTEND:20270711T003000Z
+SUMMARY:Maja & Fabians bröllop
+LOCATION:S:ta Birgittas kapell\, Klippan 2\, 414 51 Göteborg
+DESCRIPTION:Vigsel kl. 12.30 i S:ta Birgittas kapell. Därefter båt ut til
+ l Köpstadsö och fest i Societetshuset Smutten.\nKlädkod: Kavaj.\nhttps:
+ //majaochfabian.se
+URL:https://majaochfabian.se
+BEGIN:VALARM
+ACTION:DISPLAY
+TRIGGER:-P1D
+DESCRIPTION:Påminnelse
+END:VALARM
+END:VEVENT
+END:VCALENDAR

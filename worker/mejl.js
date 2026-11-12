@@ -13,7 +13,7 @@ const DAY = [
   ["Vigsel", "Kl. 12.30 i S:ta Birgittas kapell, Klippan 2, Göteborg", MAPS, "Hitta hit"],
   ["Båten", "Efter vigseln åker vi tillsammans med båt ut till Köpstadsö. Ingen behöver ordna egen resa."],
   ["Festen", "Societetshuset Smutten på Köpstadsö, en kort promenad från bryggan."],
-  ["Klädkod", "Kavaj. Gärna en sommarkostym i ljusa färger, en påhittig kavaj eller en färgglad klänning – men framför allt: var er själva."],
+  ["Klädkod", "Kavaj. Gärna en sommarkostym i ljusa färger, en påhittig kavaj eller en färgglad klänning."],
   ["Barn", "Endast vuxna."],
   ["Tal och spex", "Anmäl till våra toastmasters Moa och Irma. Kontaktuppgifter finns på hemsidan."],
   ["Hemresa", "Skärgårdsfärjan går från Köpstadsö till Saltholmen under natten. Tiderna finns på hemsidan."],
@@ -24,7 +24,7 @@ const firstName = (s) => s.namn.split(/\s+/)[0];
 
 function answerRows(s) {
   const rows = [["Namn", s.namn], ["E-post", s.epost], ["Kommer", s.kommer ? "Ja" : "Nej"]];
-  if (s.kommer) rows.push(["Fler i sällskapet", s.fler || "–"], ["Mat och allergier", s.mat || "–"]);
+  if (s.kommer) rows.push(["Fler i sällskapet", s.fler || "–"], ["Mat och allergier", s.mat || "–"], ["Låtönskning", s.lat || "–"]);
   rows.push(["Hälsning", s.halsning || "–"]);
   return rows;
 }

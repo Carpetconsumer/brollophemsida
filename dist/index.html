@@ -342,6 +342,7 @@ if (!location.hash && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
           <div id="yes-fields" style="display:flex; flex-direction:column; gap:30px">
             <div class="field"><label class="caps" for="f-fler">Fler i sällskapet</label><input id="f-fler" name="fler" type="text" placeholder="Namn på den eller de som följer med"></div>
             <div class="field"><label class="caps" for="f-mat">Mat och allergier</label><input id="f-mat" name="mat" type="text" placeholder="Vegetariskt, allergier eller annat"></div>
+            <div class="field"><label class="caps" for="f-lat">Låtönskning</label><input id="f-lat" name="lat" type="text" placeholder="En låt som får dig ut på dansgolvet"></div>
           </div>
           <div class="field"><label class="caps" for="f-halsning">Hälsning</label><textarea id="f-halsning" name="halsning" placeholder="Något du vill säga till oss? Helt frivilligt."></textarea></div>
           <div class="trap" aria-hidden="true"><label for="f-webbplats">Lämna tomt</label><input id="f-webbplats" name="webbplats" type="text" tabindex="-1" autocomplete="off"></div>
@@ -758,7 +759,7 @@ if (!location.hash && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) { err.textContent = "Skriv en e-postadress som vi kan skicka bekräftelsen till."; form.epost.focus(); return; }
     err.textContent = "";
     var kommer = form.kommer.value === "ja";
-    var data = { namn: namn, epost: epost, kommer: form.kommer.value, fler: form.fler.value, mat: form.mat.value, halsning: form.halsning.value, webbplats: form.webbplats.value };
+    var data = { namn: namn, epost: epost, kommer: form.kommer.value, fler: form.fler.value, mat: form.mat.value, lat: form.lat.value, halsning: form.halsning.value, webbplats: form.webbplats.value };
     sending = true; send.disabled = true; send.textContent = "Skickar …";
     fetch("/api/osa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) })
       .then(function (r) {

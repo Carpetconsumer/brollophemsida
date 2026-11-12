@@ -1,7 +1,7 @@
 // Tester för workern: kör `npm test`. D1 ersätts av SQLite i minnet (node:sqlite) med samma migrering.
 import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import worker from "../worker/index.js";
 import { validate } from "../worker/osa.js";
@@ -9,7 +9,8 @@ import { parseJourneys } from "../worker/farjor.js";
 
 function fakeD1() {
   const db = new DatabaseSync(":memory:");
-  db.exec(readFileSync(new URL("../migrations/0001_svar.sql", import.meta.url), "utf8"));
+  for (const f of readdirSync(new URL("../migrations/", import.meta.url)).filter((f) => f.endsWith(".sql")).sort())
+    db.exec(readFileSync(new URL("../migrations/" + f, import.meta.url), "utf8"));
   return {
     sqlite: db,
     prepare(sql) {
@@ -45,7 +46,7 @@ afterEach(() => { globalThis.fetch = realFetch; });
 const post = (body, headers = { "Content-Type": "application/json" }) =>
   new Request("https://majaochfabian.se/api/osa", { method: "POST", headers, body: typeof body === "string" ? body : JSON.stringify(body) });
 const rows = () => env.DB.sqlite.prepare("SELECT * FROM svar ORDER BY id").all();
-const yes = { namn: "Anna Svensson", epost: "anna@example.com", kommer: "ja", fler: "Erik", mat: "Vegetariskt", halsning: "Grattis!" };
+const yes = { namn: "Anna Svensson", epost: "anna@example.com", kommer: "ja", fler: "Erik", mat: "Vegetariskt", lat: "Dancing Queen", halsning: "Grattis!" };
 
 /* ---------- O.S.A. ---------- */
 
@@ -57,11 +58,12 @@ test("validate: kräver namn, giltig e-post och ja/nej", () => {
   assert.match(validate(null).fel, /formuläret/);
 });
 
-test("validate: nej rensar sällskap och mat, enradiga fält plattas till", () => {
+test("validate: nej rensar sällskap, mat och låt, enradiga fält plattas till", () => {
   const { svar } = validate({ ...yes, kommer: "nej", namn: "Anna\nSvensson" });
   assert.equal(svar.kommer, false);
   assert.equal(svar.fler, "");
   assert.equal(svar.mat, "");
+  assert.equal(svar.lat, "");
   assert.equal(svar.namn, "Anna Svensson");
 });
 
@@ -79,6 +81,7 @@ test("svar sparas, gästen får bekräftelse och vi får avisering", async () =>
   const notify = sent.find((m) => m.to === "majaochfabian@gmail.com");
   assert.match(guest.text, /^Hej Anna!/);
   assert.match(guest.text, /Mat och allergier: Vegetariskt/);
+  assert.match(guest.text, /Låtönskning: Dancing Queen/);
   assert.match(guest.text, /Kl\. 12\.30 i S:ta Birgittas kapell/);
   assert.match(guest.html, /Dagen i korthet/);
   assert.match(notify.html, /Anna Svensson kommer/);
@@ -174,9 +177,9 @@ test("CSV-export kräver nyckel och fungerar i svenskt Excel", async () => {
   const text = new TextDecoder("utf-8", { ignoreBOM: true }).decode(await res.arrayBuffer());
   assert.equal(text.charCodeAt(0), 0xfeff);
   const lines = text.slice(1).split("\r\n");
-  assert.equal(lines[0], "Tid;Namn;E-post;Kommer;Fler i sällskapet;Mat och allergier;Hälsning;Bekräftelse");
-  assert.match(lines[1], /;Anna Svensson;anna@example\.com;Ja;Erik;Vegetariskt;"'=HYPERLINK\(""x""\)\nrad två";skickad$/);
-  assert.match(lines[2], /;Bo;anna@example\.com;Nej;;;Grattis!;skickad$/);
+  assert.equal(lines[0], "Tid;Namn;E-post;Kommer;Fler i sällskapet;Mat och allergier;Låtönskning;Hälsning;Bekräftelse");
+  assert.match(lines[1], /;Anna Svensson;anna@example\.com;Ja;Erik;Vegetariskt;Dancing Queen;"'=HYPERLINK\(""x""\)\nrad två";skickad$/);
+  assert.match(lines[2], /;Bo;anna@example\.com;Nej;;;;Grattis!;skickad$/);
 });
 
 test("export utan ADMIN_KEY är avstängd", async () => {

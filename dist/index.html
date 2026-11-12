@@ -317,7 +317,7 @@ if (!location.hash && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
         <div class="item"><span class="caps">Gåvor</span><p>Det finaste ni kan ge oss är att ni kommer. Vill ni ändå ge något hjälper våra toastmasters Moa och Irma gärna till.</p></div>
         <div class="item"><span class="caps">Tal och spex</span><p>Anmäl till våra toastmasters Moa och Irma. Kontaktuppgifter hittar du längre ned.</p></div>
         <div class="item"><span class="caps">Tillgänglighet</span><p>Kapellet ligger på en liten kulle och nås med trappor eller hiss. Societetshuset Smutten är en gammal lokal och ingången nås via en trappa. Mellan färjeläget och festlokalen är det ca 10 minuters promenad på en smal asfalterad väg.</p></div>
-        <div class="item"><span class="caps">Färjor efter festen</span><p>Skärgårdsfärjan går från färjeläget på Köpstadsö till Saltholmen. Sista avgångarna natten till söndag:</p><ul class="ferry" id="ferry-list"><li><span class="num">23.32</span><span>Saltholmen 23.41</span></li><li><span class="num">00.52</span><span>Saltholmen 01.01</span></li><li><span class="num">02.19</span><span>Saltholmen 02.28</span></li></ul><p class="note"><span id="ferry-src">Lördagstider enligt sommartidtabellen 2026. Tiderna för 2027 kan ändras,</span> så dubbelkolla gärna i <a href="https://www.vasttrafik.se/" target="_blank" rel="noopener">Västtrafiks reseplanerare</a> närmare dagen.</p></div>
+        <div class="item"><span class="caps">Färjor efter festen</span><p>Skärgårdsfärjan går från färjeläget på Köpstadsö till Saltholmen. Sista avgångarna natten till söndag:</p><ul class="ferry" id="ferry-list"><li><span class="num">23.32</span><span>Saltholmen 23.41</span></li><li><span class="num">00.52</span><span>Saltholmen 01.01</span></li><li><span class="num">02.19</span><span>Saltholmen 02.28</span></li></ul></div>
       </div>
     </div>
   </section>
@@ -789,7 +789,6 @@ if (!location.hash && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
         t.className = "num"; t.textContent = a.avgar; to.textContent = "Saltholmen " + a.framme;
         li.append(t, to); return li;
       }));
-      document.getElementById("ferry-src").textContent = "Enligt Västtrafiks tidtabell för natten till söndag 11 juli 2027. Det kan bli ändringar,";
     }).catch(function () {});
   }
 })();

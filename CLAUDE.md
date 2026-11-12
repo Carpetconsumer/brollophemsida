@@ -9,7 +9,7 @@ Allt innehåll är på svenska. Ton: varm, kort och rak – inga utfyllnadsord, 
 ```
 src/template.html       Sidan: <title>, typsnitt, <style>, markup och <script>. Kartdata injiceras vid /*__MAPDATA__*/
 data/mapdata.json       Genererad kartdata (kust, rutt, promenad, platser, vågmarkeringar) – redigera inte för hand
-tools/build_site.py     src/template.html + data/mapdata.json -> dist/index.html (en självständig fil)
+tools/build_site.py     src/template.html + data/mapdata.json -> dist/index.html (en självständig fil) + kalenderfilerna dist/brollop.ics och dist/osa.ics
 tools/map/              Python-pipeline som bygger data/mapdata.json (se nedan)
 dist/index.html         Byggd sida att publicera (committas; CI kontrollerar att den är byggd från src + data)
 worker/                 Cloudflare Worker: serverar dist/ och /api/* (O.S.A., CSV-export, färjetider)
@@ -32,7 +32,8 @@ Bygg sidan: `python tools/build_site.py` (bara standardbiblioteket). Öppna `dis
 - **Karta**: `D.fineEnc` är kustlinjer i ett kompakt delta-format (halva enheter, 2 tecken per punkt); avkodas i `decode()`, förenklas i tre detaljnivåer (Douglas–Peucker, `FINE_TOL`) och ritas med mjuka kurvor. `D.coarse` används vid utzoomning. Världsenheter: 1 enhet ≈ 5,57 m.
 - **Teman**: färgtoken i `:root` med mörkt läge via `prefers-color-scheme` och `[data-theme]`. `prefers-reduced-motion` respekteras.
 - **Typsnitt**: Cormorant Garamond (rubriker) och Jost (brödtext) från Google Fonts.
-- **Sektioner efter berättelsen**: Bra att veta (klädkod Kavaj, endast vuxna, gåvor via toastmasters, tal och spex, tillgänglighet, färjetider), O.S.A.-formulär, Kontakt, sidfot.
+- **Sektioner efter berättelsen**: Bra att veta (klädkod Kavaj, endast vuxna, gåvor via toastmasters, tal och spex, tillgänglighet, färjetider), O.S.A.-formulär (med länkar till `brollop.ics` och `osa.ics`), Kontakt, sidfot.
+- **Kalenderfiler**: skrivs av `tools/build_site.py` (`CALENDARS`). Bekräftelsemejlet länkar till `https://majaochfabian.se/brollop.ics`, så ändras tider eller plats behöver filen byggas om.
 
 ## Kartdata (tools/map)
 

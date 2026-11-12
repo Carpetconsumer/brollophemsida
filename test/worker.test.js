@@ -84,6 +84,8 @@ test("svar sparas, gästen får bekräftelse och vi får avisering", async () =>
   assert.match(guest.text, /Låtönskning: Dancing Queen/);
   assert.match(guest.text, /Kl\. 12\.30 i S:ta Birgittas kapell/);
   assert.match(guest.html, /Dagen i korthet/);
+  assert.match(guest.html, /href="https:\/\/majaochfabian\.se\/brollop\.ics"/);
+  assert.match(guest.text, /kalender: https:\/\/majaochfabian\.se\/brollop\.ics/);
   assert.match(notify.html, /Anna Svensson kommer/);
   assert.equal(guest.replyTo, "majaochfabian@gmail.com");
   assert.equal(notify.subject, "O.S.A.: Anna Svensson – kommer");
@@ -102,6 +104,7 @@ test("mejlen escapar det gästen skriver och nej-svaret saknar dagens program", 
   assert.match(nej.html, /Vad synd att du inte kan komma/);
   assert.doesNotMatch(nej.html, /Dagen i korthet/);
   assert.doesNotMatch(nej.text, /Dagen i korthet/);
+  assert.doesNotMatch(nej.html, /brollop\.ics/);
 });
 
 test("felaktigt formulär ger 400 med svensk text och sparar inget", async () => {

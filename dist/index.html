@@ -179,6 +179,7 @@ html.intro .cue { animation-delay: 1.65s; }
 .osa { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(40px, 7vw, 110px); align-items: start; }
 @media (max-width: 860px) { .osa { grid-template-columns: minmax(0, 1fr); } }
 .deadline { font-family: var(--font-display); font-style: italic; font-size: 30px; line-height: 1.2; }
+.cal { display: flex; flex-wrap: wrap; gap: 14px 30px; padding-top: 4px; }
 form { display: flex; flex-direction: column; gap: 30px; }
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field input[type=text], .field input[type=email], .field textarea { width: 100%; font: inherit; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--ink); border-radius: 0; padding: 10px 0; font-size: 18px; }
@@ -331,6 +332,7 @@ if (!location.hash && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
         <h2>Kommer du?</h2>
         <p class="deadline">Svara senast 1 april 2027.</p>
         <p>Ett svar per sällskap räcker. Skriv gärna allergier och annat vi behöver veta inför middagen. Tänk på att bröllopet är för vuxna.</p>
+        <div class="cal"><a class="go caps" href="brollop.ics" download="maja-och-fabian.ics">Bröllopet i kalendern</a><a class="go caps" href="osa.ics" download="osa-maja-och-fabian.ics">Påminnelse om O.S.A.</a></div>
       </div>
       <div id="osa-box">
         <form id="osa-form" novalidate>

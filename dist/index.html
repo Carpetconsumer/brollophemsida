@@ -555,11 +555,16 @@ if (!location.hash && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
   var _bi = -1;
   function stepIndex(n) { if (_bi < 0) steps.forEach(function (s, i) { if (s.name === n) _bi = i; }); return _bi; }
 
+  // the coast is cut at the data box: land to the east (mainland) and a few islands at the top and bottom end in a straight edge,
+  // so the view must stay inside it. Open water lies to the west, so a little margin is fine there.
+  var VIEW = [-120, 0, D.w, D.h];
   function clampCam(cam) {
-    var m = Math.min(W, H), sc = m / cam[2];
-    var vw = W / sc, vh = H / sc, L = cam[0] - cam[3] * vw, T = cam[1] - cam[4] * vh, pad = 120;
-    if (vw < D.w + 2 * pad) { if (L < -pad) cam[0] += -pad - L; else if (L + vw > D.w + pad) cam[0] -= L + vw - D.w - pad; }
-    if (vh < D.h + 2 * pad) { if (T < -pad) cam[1] += -pad - T; else if (T + vh > D.h + pad) cam[1] -= T + vh - D.h - pad; }
+    var m = Math.min(W, H), bw = VIEW[2] - VIEW[0], bh = VIEW[3] - VIEW[1];
+    // wide or tall screens (and the zoom-out in transitions) could see past the edge: zoom in just enough
+    cam[2] = Math.min(cam[2], bw * m / W, bh * m / H);
+    var sc = m / cam[2], vw = W / sc, vh = H / sc, L = cam[0] - cam[3] * vw, T = cam[1] - cam[4] * vh;
+    if (L < VIEW[0]) cam[0] += VIEW[0] - L; else if (L + vw > VIEW[2]) cam[0] -= L + vw - VIEW[2];
+    if (T < VIEW[1]) cam[1] += VIEW[1] - T; else if (T + vh > VIEW[3]) cam[1] -= T + vh - VIEW[3];
     return cam;
   }
 

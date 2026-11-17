@@ -8,8 +8,9 @@ Allt innehåll är på svenska. Ton: varm, kort och rak – inga utfyllnadsord, 
 
 ```
 src/template.html       Sidan: <title>, typsnitt, <style>, markup och <script>. Kartdata injiceras vid /*__MAPDATA__*/
+src/favicon/            Favicon: et-tecknet från inbjudan (favicon.svg; .ico och apple-touch-icon.png är renderade från den)
 data/mapdata.json       Genererad kartdata (kust, rutt, promenad, platser, vågmarkeringar) – redigera inte för hand
-tools/build_site.py     src/template.html + data/mapdata.json -> dist/index.html (en självständig fil) + kalenderfilerna dist/brollop.ics och dist/osa.ics
+tools/build_site.py     src/template.html + data/mapdata.json -> dist/index.html (en självständig fil) + kalenderfilerna dist/brollop.ics och dist/osa.ics + favicons
 tools/map/              Python-pipeline som bygger data/mapdata.json (se nedan)
 dist/index.html         Byggd sida att publicera (committas; CI kontrollerar att den är byggd från src + data)
 worker/                 Cloudflare Worker: serverar dist/ och /api/* (O.S.A., CSV-export, färjetider)

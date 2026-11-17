@@ -1,6 +1,7 @@
 // Cloudflare Worker för majaochfabian.se. Sidan (dist/) serveras som statiska filer; bara /api/* når hit.
 import { handleOsa, handleExport } from "./osa.js";
 import { handleFarjor } from "./farjor.js";
+import { handleStuds } from "./studs.js";
 
 export default {
   async fetch(request, env, ctx) {
@@ -9,6 +10,7 @@ export default {
       if (pathname === "/api/osa") return await handleOsa(request, env, ctx);
       if (pathname === "/api/osa.csv") return await handleExport(request, env);
       if (pathname === "/api/farjor") return await handleFarjor(request, env, ctx);
+      if (pathname === "/api/studs") return await handleStuds(request, env);
     } catch (e) {
       console.error(pathname, String(e), e?.stack);
       return new Response(JSON.stringify({ ok: false, fel: "Något gick fel hos oss. Försök igen om en stund." }), {

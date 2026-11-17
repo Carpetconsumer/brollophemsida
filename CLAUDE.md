@@ -13,7 +13,7 @@ data/mapdata.json       Genererad kartdata (kust, rutt, promenad, platser, vågm
 tools/build_site.py     src/template.html + data/mapdata.json -> dist/index.html (en självständig fil) + kalenderfilerna dist/brollop.ics och dist/osa.ics + favicons
 tools/map/              Python-pipeline som bygger data/mapdata.json (se nedan)
 dist/index.html         Byggd sida att publicera (committas; CI kontrollerar att den är byggd från src + data)
-worker/                 Cloudflare Worker: serverar dist/ och /api/* (O.S.A., CSV-export, färjetider)
+worker/                 Cloudflare Worker: serverar dist/ och /api/* (O.S.A., CSV-export, färjetider, studsar)
 migrations/             D1-schema (tabellen svar)
 test/                   Tester för workern (`npm test`, D1 ersätts av SQLite i minnet)
 wrangler.jsonc          Worker-konfiguration: assets, D1, domän, variabler
@@ -50,12 +50,13 @@ Bygg sidan: `python tools/build_site.py` (bara standardbiblioteket). Öppna `dis
 
 En Cloudflare Worker serverar `dist/` som statiska filer och svarar på `/api/*`:
 
-- `POST /api/osa` (`worker/osa.js`): validerar som formuläret, sparar en rad i D1-tabellen `svar` (inget skrivs över), mejlar gästen en bekräftelse och oss en avisering med svaret (reply-to åt båda hållen). Mejlen skickas efter svaret med `waitUntil`; kolumnen `bekraftelse` blir `skickad`, `misslyckad`, `spärrad` (fler än tre till samma adress per dygn) eller `av` (ingen e-post konfigurerad). Ett dolt fält `webbplats` fångar botar.
+- `POST /api/osa` (`worker/osa.js`): validerar som formuläret, sparar en rad i D1-tabellen `svar` (inget skrivs över), mejlar gästen en bekräftelse och oss en avisering med svaret (reply-to åt båda hållen). Mejlen skickas efter svaret med `waitUntil`; kolumnen `bekraftelse` blir `skickad`, `misslyckad`, `spärrad` (fler än tre till samma adress per dygn) eller `av` (ingen e-post konfigurerad), och senare `studsade` om mejlet inte kom fram. Bekräftelsens id hos Resend sparas i `mejl_id`. Ett dolt fält `webbplats` fångar botar.
+- `POST /api/studs` (`worker/studs.js`): webhook från Resend med händelserna `email.bounced` och `email.suppressed`, signerad med `RESEND_WEBHOOK_SECRET` (Svix). Studsar en bekräftelse blir raden `studsade` och vi får ett mejl med svaret och felmeddelandet, så att vi kan be gästen svara igen med rätt adress. Andra mejl och händelser ignoreras. Bot Fight Mode i Cloudflare kan inte undantas på Free-planen; slutar studsmejlen komma, titta på webhookens leveranser hos Resend.
 - `GET /api/osa.csv?nyckel=<ADMIN_KEY>`: alla svar som CSV (semikolon + BOM, öppnas direkt i svenskt Excel).
 - `GET /api/farjor` (`worker/farjor.js`): färjor Köpstadsö → Saltholmen natten 10–11 juli 2027 från Västtrafiks Planera Resa v4 (`journeys`), cachas 6 h. Ger `{ avgangar: null }` utan nyckel eller innan Västtrafik har tidtabellen; då står tiderna i HTML:en kvar. Felsökning: `/api/farjor?datum=ÅÅÅÅ-MM-DD&nyckel=<ADMIN_KEY>` hämtar en annan natt utan cache och visar Västtrafiks felmeddelande.
 - E-post (`worker/mail.js`): Resend om `RESEND_API_KEY` finns, annars Cloudflare Email Service om bindningen `EMAIL` finns, annars inget. Mejlen (`worker/mejl.js`) har en HTML-version i sidans stil (tabeller och inline-stil för Gmail/Outlook) och en textversion. Bekräftelsen till den som kommer innehåller "Dagen i korthet" – håll den i takt med hemsidan.
 
-Hemligheter (sätts med `npx wrangler secret put NAMN` eller i Cloudflare under Worker → Settings → Variables and Secrets): `ADMIN_KEY`, `RESEND_API_KEY`, `VASTTRAFIK_KEY`. Lokalt läggs de i `.dev.vars` (ignoreras av git). Vanliga variabler (`MAIL_FROM`, `NOTIFY_TO`) står i `wrangler.jsonc`.
+Hemligheter (sätts med `npx wrangler secret put NAMN` eller i Cloudflare under Worker → Settings → Variables and Secrets): `ADMIN_KEY`, `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET`, `VASTTRAFIK_KEY`. Lokalt läggs de i `.dev.vars` (ignoreras av git). Vanliga variabler (`MAIL_FROM`, `NOTIFY_TO`) står i `wrangler.jsonc`.
 
 ## Publicering
 
@@ -63,7 +64,7 @@ Pushar till `main` testas och publiceras av `.github/workflows/publicera.yml` (`
 
 1. **Flytta DNS till Cloudflare.** Domänen ligger hos one.com (namnservrar `ns01/ns02.one.com`, visar en parkeringssida). I Cloudflare: *Add a domain* → `majaochfabian.se` → Free. Byt sedan namnservrar hos one.com (DNS-inställningar → egna namnservrar) till de två som Cloudflare anger och vänta tills Cloudflare visar domänen som aktiv. Workerns `routes` kopplar `majaochfabian.se` och `www` och fungerar först då.
 2. **API-token för GitHub.** Cloudflare → My Profile → API Tokens → mallen *Edit Cloudflare Workers*, lägg till *Account → D1 → Edit* och *Zone → DNS → Edit*, och välj zonen majaochfabian.se. Lägg token som repo-secret `CLOUDFLARE_API_TOKEN` och konto-id:t (står på Cloudflares översiktssida) som `CLOUDFLARE_ACCOUNT_ID` i GitHub → Settings → Secrets and variables → Actions.
-3. **E-post.** Skapa ett konto på resend.com (gratis upp till 3 000 mejl/månad), lägg till domänen `majaochfabian.se`, lägg in DNS-posterna som Resend visar i Cloudflare DNS och skapa en API-nyckel med sändrätt → `npx wrangler secret put RESEND_API_KEY`. (Alternativ utan Resend: Cloudflare Email Service kräver Workers Paid, 5 USD/månad, för att mejla gästerna. Onboarda domänen där och lägg till `"send_email": [{ "name": "EMAIL" }]` i `wrangler.jsonc`.)
+3. **E-post.** Skapa ett konto på resend.com (gratis upp till 3 000 mejl/månad), lägg till domänen `majaochfabian.se`, lägg in DNS-posterna som Resend visar i Cloudflare DNS och skapa en API-nyckel med sändrätt → `npx wrangler secret put RESEND_API_KEY`. Lägg sedan till en webhook (Webhooks → Add endpoint) till `https://majaochfabian.se/api/studs` med händelserna `email.bounced` och `email.suppressed` och spara dess signeringsnyckel (`whsec_…`) → `npx wrangler secret put RESEND_WEBHOOK_SECRET`. (Alternativ utan Resend: Cloudflare Email Service kräver Workers Paid, 5 USD/månad, för att mejla gästerna. Onboarda domänen där och lägg till `"send_email": [{ "name": "EMAIL" }]` i `wrangler.jsonc`.)
 4. **Nyckel för svarslistan.** `npx wrangler secret put ADMIN_KEY` med en lång slumpad sträng. Svaren hämtas sedan på `https://majaochfabian.se/api/osa.csv?nyckel=…`.
 5. **Västtrafik** (för färjetiderna). Registrera ett konto på developer.vasttrafik.se, skapa en applikation, prenumerera på *Planera Resa v4* och kopiera applikationens autentiseringsnyckel (base64) → `npx wrangler secret put VASTTRAFIK_KEY`.
 6. Merga till `main`. Kontrollera sedan att https://majaochfabian.se visar sidan och skicka ett testsvar.

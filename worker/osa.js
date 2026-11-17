@@ -51,18 +51,20 @@ export async function handleOsa(request, env, ctx) {
 }
 
 async function sendMails(env, s, id, confirm) {
+  const status = (bekraftelse, mejlId) =>
+    env.DB.prepare("UPDATE svar SET bekraftelse = ?1, mejl_id = ?2 WHERE id = ?3").bind(bekraftelse, mejlId || "", id).run();
   const jobs = [];
   if (confirm) {
+    // mejlets id sparas så fort Resend har tagit emot det, så att en studs (POST /api/studs) hittar raden
     jobs.push(sendMail(env, { to: s.epost, replyTo: env.NOTIFY_TO, ...guestMail(s) }).then(
-      () => "skickad",
-      (e) => { console.error("bekräftelse", id, String(e)); return "misslyckad"; }
+      (mejlId) => status("skickad", mejlId),
+      (e) => { console.error("bekräftelse", id, String(e)); return status("misslyckad"); }
     ));
   }
   if (env.NOTIFY_TO) {
     jobs.push(sendMail(env, { to: env.NOTIFY_TO, replyTo: s.epost, ...notifyMail(s) }).catch((e) => console.error("avisering", id, String(e))));
   }
-  const [result] = await Promise.all(jobs);
-  if (confirm) await env.DB.prepare("UPDATE svar SET bekraftelse = ?1 WHERE id = ?2").bind(result, id).run();
+  await Promise.all(jobs);
 }
 
 /* ---------- export ---------- */

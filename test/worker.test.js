@@ -190,6 +190,129 @@ test("export utan ADMIN_KEY är avstängd", async () => {
   assert.equal((await worker.fetch(new Request("https://majaochfabian.se/api/osa.csv?nyckel="), env, ctx)).status, 403);
 });
 
+/* ---------- studsar (Resend-webhook) ---------- */
+
+const WEBHOOK_SECRET = "whsec_" + Buffer.from("en-testnyckel-for-resends-webhook").toString("base64");
+
+// som Resend (Svix) signerar: HMAC-SHA256 över "id.tidpunkt.kropp" med den base64-avkodade nyckeln
+async function webhook(event, { secret = WEBHOOK_SECRET, ts = Math.floor(Date.now() / 1000), id = "msg_1", signature } = {}) {
+  const body = JSON.stringify(event);
+  const key = await crypto.subtle.importKey("raw", Buffer.from(secret.slice(6), "base64"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = Buffer.from(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${id}.${ts}.${body}`))).toString("base64");
+  return new Request("https://majaochfabian.se/api/studs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "svix-id": id, "svix-timestamp": String(ts), "svix-signature": signature ?? `v1,ogiltig v1,${sig}` },
+    body,
+  });
+}
+
+const bounced = (emailId) => ({
+  type: "email.bounced",
+  created_at: "2026-11-17T10:25:48.000Z",
+  data: {
+    email_id: emailId, to: ["anna@example.com"], subject: "Tack för ditt svar – Maja & Fabian 10 juli 2027",
+    bounce: { message: "550 5.5.0 Requested action not taken: mailbox unavailable", subType: "General", type: "Permanent" },
+  },
+});
+
+// Resend som e-post; varje mejl får id:t "id-<mottagare>"
+function useResend() {
+  delete env.EMAIL;
+  env.RESEND_API_KEY = "re_test";
+  env.RESEND_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  const mails = [];
+  globalThis.fetch = async (url, init) => {
+    const m = JSON.parse(init.body);
+    mails.push(m);
+    return Response.json({ id: "id-" + m.to[0] });
+  };
+  return mails;
+}
+
+test("bekräftelsens id sparas så att en studs hittar rätt svar", async () => {
+  const mails = useResend();
+  await worker.fetch(post(yes), env, ctx);
+  await ctx.done();
+  assert.equal(mails.length, 2);
+  assert.equal(rows()[0].mejl_id, "id-anna@example.com");
+  assert.equal(rows()[0].bekraftelse, "skickad");
+});
+
+test("studsad bekräftelse markeras och vi får ett mejl om det, en gång", async () => {
+  const mails = useResend();
+  await worker.fetch(post(yes), env, ctx);
+  await ctx.done();
+  const res = await worker.fetch(await webhook(bounced("id-anna@example.com")), env, ctx);
+  assert.equal(res.status, 200);
+  assert.equal(rows()[0].bekraftelse, "studsade");
+  assert.equal(mails.length, 3);
+  const m = mails[2];
+  assert.deepEqual(m.to, ["majaochfabian@gmail.com"]);
+  assert.equal(m.subject, "Bekräftelsen till Anna Svensson kom inte fram");
+  assert.equal(m.reply_to, undefined);
+  assert.match(m.text, /anna@example\.com/);
+  assert.match(m.text, /550 5\.5\.0 Requested action not taken/);
+  assert.match(m.text, /Mat och allergier: Vegetariskt/);
+  assert.match(m.html, /Bekräftelsen till Anna Svensson kom inte fram/);
+
+  // Resend kan skicka samma händelse igen
+  assert.equal((await worker.fetch(await webhook(bounced("id-anna@example.com")), env, ctx)).status, 200);
+  assert.equal(mails.length, 3);
+});
+
+test("spärrad adress (email.suppressed) räknas som studs", async () => {
+  const mails = useResend();
+  await worker.fetch(post(yes), env, ctx);
+  await ctx.done();
+  const event = {
+    type: "email.suppressed",
+    data: { email_id: "id-anna@example.com", to: ["anna@example.com"], suppressed: { message: "Resend has suppressed sending to this address", type: "OnAccountSuppressionList" } },
+  };
+  assert.equal((await worker.fetch(await webhook(event), env, ctx)).status, 200);
+  assert.equal(rows()[0].bekraftelse, "studsade");
+  assert.match(mails[2].text, /Resend has suppressed sending/);
+});
+
+test("webhook utan giltig signatur avvisas", async () => {
+  const mails = useResend();
+  await worker.fetch(post(yes), env, ctx);
+  await ctx.done();
+  const fel = "whsec_" + Buffer.from("fel-nyckel").toString("base64");
+  const old = Math.floor(Date.now() / 1000) - 600;
+  for (const req of [
+    await webhook(bounced("id-anna@example.com"), { secret: fel }),
+    await webhook(bounced("id-anna@example.com"), { ts: old }),
+    await webhook(bounced("id-anna@example.com"), { signature: "" }),
+    new Request("https://majaochfabian.se/api/studs", { method: "POST", body: JSON.stringify(bounced("id-anna@example.com")) }),
+  ]) assert.equal((await worker.fetch(req, env, ctx)).status, 401);
+  assert.equal(rows()[0].bekraftelse, "skickad");
+  assert.equal(mails.length, 2);
+  assert.equal((await worker.fetch(new Request("https://majaochfabian.se/api/studs"), env, ctx)).status, 405);
+  delete env.RESEND_WEBHOOK_SECRET;
+  assert.equal((await worker.fetch(await webhook(bounced("id-anna@example.com")), env, ctx)).status, 404);
+});
+
+test("andra mejl och händelser ignoreras", async () => {
+  const mails = useResend();
+  await worker.fetch(post(yes), env, ctx);
+  await ctx.done();
+  // aviseringen till oss är inte en bekräftelse
+  assert.equal((await worker.fetch(await webhook(bounced("id-majaochfabian@gmail.com")), env, ctx)).status, 200);
+  assert.equal((await worker.fetch(await webhook({ type: "email.delivered", data: { email_id: "id-anna@example.com" } }), env, ctx)).status, 200);
+  assert.equal(rows()[0].bekraftelse, "skickad");
+  assert.equal(mails.length, 2);
+});
+
+test("misslyckad avisering om studs ger 500 så att Resend försöker igen", async () => {
+  const mails = useResend();
+  await worker.fetch(post(yes), env, ctx);
+  await ctx.done();
+  globalThis.fetch = async () => new Response("rate limited", { status: 429 });
+  assert.equal((await worker.fetch(await webhook(bounced("id-anna@example.com")), env, ctx)).status, 500);
+  assert.equal(rows()[0].bekraftelse, "skickad");
+  assert.equal(mails.length, 2);
+});
+
 /* ---------- färjor ---------- */
 
 const leg = (dep, arr, extra = {}) => ({

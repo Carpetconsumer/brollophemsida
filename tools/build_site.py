@@ -1,5 +1,6 @@
 """Build the site: src/template.html + data/mapdata.json -> dist/index.html (one self-contained file),
-plus the calendar files dist/brollop.ics (the day) and dist/osa.ics (the answer deadline).
+plus the calendar files dist/brollop.ics (the day) and dist/osa.ics (the answer deadline),
+and copies the favicons in src/favicon/ to dist/.
 
     python tools/build_site.py
 
@@ -27,6 +28,9 @@ doc = f"""<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Maja &amp; Fabian gifter sig lördag 10 juli 2027 – vigsel i S:ta Birgittas kapell, fest på Köpstadsö.">
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 {head}
 </head>
 <body>
@@ -38,6 +42,12 @@ out = ROOT / "dist" / "index.html"
 out.parent.mkdir(exist_ok=True)
 out.write_text(doc, encoding="utf-8")
 print(f"wrote {out.relative_to(ROOT)} ({len(doc.encode('utf-8')) / 1024:.0f} KB)")
+
+# favicons: the italic ampersand from the invitation (Cormorant Garamond), drawn as a path so no font is needed.
+# favicon.ico and apple-touch-icon.png are rendered from favicon.svg once and committed (the build is stdlib only).
+for icon in sorted((ROOT / "src" / "favicon").iterdir()):
+    (ROOT / "dist" / icon.name).write_bytes(icon.read_bytes())
+    print(f"wrote dist/{icon.name}")
 
 
 # ---------- calendar files (iCalendar, CRLF line endings, fixed stamps so the build stays deterministic) ----------

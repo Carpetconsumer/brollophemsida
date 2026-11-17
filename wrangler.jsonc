@@ -17,6 +17,6 @@
     "MAIL_FROM": "Maja & Fabian <osa@majaochfabian.se>",
     "NOTIFY_TO": "majaochfabian@gmail.com"
   },
-  // hemligheter sätts med `npx wrangler secret put <NAMN>`: ADMIN_KEY, RESEND_API_KEY, VASTTRAFIK_KEY
+  // hemligheter sätts med `npx wrangler secret put <NAMN>`: ADMIN_KEY, RESEND_API_KEY, RESEND_WEBHOOK_SECRET, VASTTRAFIK_KEY
   "observability": { "enabled": true }
 }

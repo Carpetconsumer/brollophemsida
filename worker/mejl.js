@@ -1,4 +1,5 @@
-// Mejlen som O.S.A.-formuläret skickar: bekräftelse till gästen och avisering till oss.
+// Mejlen som O.S.A.-formuläret skickar: bekräftelse till gästen och avisering till oss,
+// och mejlet till oss om en bekräftelse som inte kom fram (POST /api/studs).
 // Varje mejl har en HTML-version i sidans stil och en textversion för klienter som inte visar HTML.
 
 const SITE = "https://majaochfabian.se";
@@ -133,4 +134,23 @@ export function notifyMail(s) {
     para(esc(reply)),
   ].join("\n");
   return { subject, text, html: page({ title: subject, preheader: `Nytt O.S.A.-svar från ${s.namn}`, rows }) };
+}
+
+// reason: felmeddelandet från mottagarens e-postserver eller från Resend
+export function bounceMail(s, reason) {
+  const subject = `Bekräftelsen till ${s.namn} kom inte fram`;
+  const first = firstName(s);
+  const intro = `Mejlet till ${s.epost} studsade, så ${first} har inte fått bekräftelsen. Oftast betyder det att adressen är felstavad.`;
+  const todo = `Hör av er på annat sätt och be ${first} svara igen på hemsidan med rätt adress, så kommer bekräftelsen fram. Svaret nedan är redan sparat.`;
+  const why = reason ? [["Felmeddelande", reason]] : [];
+  const text = `${intro}\n\n${todo}\n\n${why.length ? textRows(why) + "\n\n" : ""}Svaret\n${textRows(answerRows(s))}\n`;
+  const rows = [
+    `<tr><td style="padding-bottom:14px;font-family:${DISPLAY};font-size:34px;line-height:38px;font-weight:300;color:${INK};">${esc(subject)}</td></tr>`,
+    para(esc(intro)),
+    para(esc(todo)),
+    ...(why.length ? [facts(why)] : []),
+    heading("Svaret"),
+    facts(answerRows(s)),
+  ].join("\n");
+  return { subject, text, html: page({ title: subject, preheader: `Mejlet till ${s.epost} studsade`, rows }) };
 }

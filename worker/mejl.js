@@ -1,4 +1,4 @@
-// Mejlen som O.S.A.-formuläret skickar: bekräftelse till gästen och avisering till oss,
+// Mejlen som O.S.A.-formuläret skickar: bekräftelse till gästen och avisering till oss och våra toastmasters,
 // och mejlet till oss om en bekräftelse som inte kom fram (POST /api/studs).
 // Varje mejl har en HTML-version i sidans stil och en textversion för klienter som inte visar HTML.
 

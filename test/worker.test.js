@@ -33,6 +33,7 @@ beforeEach(() => {
     DB: fakeD1(),
     MAIL_FROM: "Maja & Fabian <osa@majaochfabian.se>",
     NOTIFY_TO: "majaochfabian@gmail.com",
+    TOAST_TO: "toast.majaochfabian@protonmail.com",
     ADMIN_KEY: "hemlig-nyckel",
     EMAIL: { send: async (m) => { sent.push(m); return { messageId: "x" }; } },
     ASSETS: { fetch: async () => new Response("sidan") },
@@ -67,7 +68,7 @@ test("validate: nej rensar sällskap, mat och låt, enradiga fält plattas till"
   assert.equal(svar.namn, "Anna Svensson");
 });
 
-test("svar sparas, gästen får bekräftelse och vi får avisering", async () => {
+test("svar sparas, gästen får bekräftelse och vi och toastmasters får avisering", async () => {
   const res = await worker.fetch(post(yes), env, ctx);
   assert.equal(res.status, 200);
   assert.deepEqual(await res.json(), { ok: true, bekraftelse: true });
@@ -78,7 +79,8 @@ test("svar sparas, gästen får bekräftelse och vi får avisering", async () =>
   assert.equal(r.fler, "Erik");
   assert.equal(r.bekraftelse, "skickad");
   const guest = sent.find((m) => m.to === "anna@example.com");
-  const notify = sent.find((m) => m.to === "majaochfabian@gmail.com");
+  const notify = sent.find((m) => m.subject.startsWith("O.S.A.:"));
+  assert.equal(sent.length, 2);
   assert.match(guest.text, /^Hej Anna!/);
   assert.match(guest.text, /Mat och allergier: Vegetariskt/);
   assert.match(guest.text, /Låtönskning: Dancing Queen/);
@@ -90,6 +92,14 @@ test("svar sparas, gästen får bekräftelse och vi får avisering", async () =>
   assert.equal(guest.replyTo, "majaochfabian@gmail.com");
   assert.equal(notify.subject, "O.S.A.: Anna Svensson – kommer");
   assert.equal(notify.replyTo, "anna@example.com");
+  assert.deepEqual(notify.to, ["majaochfabian@gmail.com", "toast.majaochfabian@protonmail.com"]);
+});
+
+test("utan TOAST_TO går aviseringen bara till oss", async () => {
+  delete env.TOAST_TO;
+  await worker.fetch(post(yes), env, ctx);
+  await ctx.done();
+  assert.deepEqual(sent.find((m) => m.subject.startsWith("O.S.A.:")).to, ["majaochfabian@gmail.com"]);
 });
 
 test("mejlen escapar det gästen skriver och nej-svaret saknar dagens program", async () => {
@@ -137,7 +147,7 @@ test("högst tre bekräftelser per adress och dygn", async () => {
   for (let i = 0; i < 4; i++) { await worker.fetch(post(yes), env, ctx); await ctx.done(); }
   assert.deepEqual(rows().map((r) => r.bekraftelse), ["skickad", "skickad", "skickad", "spärrad"]);
   assert.equal(sent.filter((m) => m.to === "anna@example.com").length, 3);
-  assert.equal(sent.filter((m) => m.to === "majaochfabian@gmail.com").length, 4);
+  assert.equal(sent.filter((m) => m.subject.startsWith("O.S.A.:")).length, 4);
 });
 
 test("misslyckat mejl markeras men svaret står kvar", async () => {
@@ -160,6 +170,7 @@ test("Resend används när RESEND_API_KEY finns", async () => {
   assert.equal(calls[0].init.headers.Authorization, "Bearer re_test");
   const body = JSON.parse(calls[0].init.body);
   assert.deepEqual(body.to, ["anna@example.com"]);
+  assert.deepEqual(JSON.parse(calls[1].init.body).to, ["majaochfabian@gmail.com", "toast.majaochfabian@protonmail.com"]);
   assert.equal(body.from, "Maja & Fabian <osa@majaochfabian.se>");
   assert.equal(body.reply_to, "majaochfabian@gmail.com");
   assert.match(body.html, /^<!DOCTYPE html>/);

@@ -15,7 +15,9 @@
   ],
   "vars": {
     "MAIL_FROM": "Maja & Fabian <osa@majaochfabian.se>",
-    "NOTIFY_TO": "majaochfabian@gmail.com"
+    "NOTIFY_TO": "majaochfabian@gmail.com",
+    // toastmasters får samma avisering om varje O.S.A.-svar (inte bekräftelser eller studsar)
+    "TOAST_TO": "toast.majaochfabian@protonmail.com"
   },
   // hemligheter sätts med `npx wrangler secret put <NAMN>`: ADMIN_KEY, RESEND_API_KEY, RESEND_WEBHOOK_SECRET, VASTTRAFIK_KEY
   "observability": { "enabled": true }

@@ -1,4 +1,4 @@
-// O.S.A.: tar emot formuläret (POST /api/osa), sparar i D1 och mejlar gästen och oss.
+// O.S.A.: tar emot formuläret (POST /api/osa), sparar i D1 och mejlar gästen, oss och våra toastmasters.
 // Svaren hämtas som CSV från GET /api/osa.csv?nyckel=<ADMIN_KEY>.
 import { mailConfigured, sendMail } from "./mail.js";
 import { guestMail, notifyMail } from "./mejl.js";
@@ -61,8 +61,10 @@ async function sendMails(env, s, id, confirm) {
       (e) => { console.error("bekräftelse", id, String(e)); return status("misslyckad"); }
     ));
   }
-  if (env.NOTIFY_TO) {
-    jobs.push(sendMail(env, { to: env.NOTIFY_TO, replyTo: s.epost, ...notifyMail(s) }).catch((e) => console.error("avisering", id, String(e))));
+  // ett mejl till oss och toastmasters (TOAST_TO), så att det blir ett anrop mot Resend precis som förut
+  const notifyTo = [env.NOTIFY_TO, env.TOAST_TO].filter(Boolean);
+  if (notifyTo.length) {
+    jobs.push(sendMail(env, { to: notifyTo, replyTo: s.epost, ...notifyMail(s) }).catch((e) => console.error("avisering", id, String(e))));
   }
   await Promise.all(jobs);
 }
